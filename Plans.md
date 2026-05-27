@@ -1,0 +1,158 @@
+# CoopWork Plans.md
+
+Criação: 2026-05-26  
+Produto: Plataforma de Gestão Corporativa para Cooperativas de Crédito  
+Stack: React + NestJS + PostgreSQL (Supabase) + Vercel + Railway
+
+---
+
+## Phase 1: Fundação do Projeto
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 1.1 | Criar monorepo com estrutura `apps/web` (React+Vite) e `apps/api` (NestJS) + `packages/shared` (types compartilhados), configurar ESLint, Prettier, TypeScript strict, Husky pre-commit | `pnpm install` passa, `pnpm build` compila ambas as apps sem erro, lint passa no CI | - | cc:TODO |
+| 1.2 | Configurar projeto Supabase: criar banco PostgreSQL, habilitar Auth (Google OAuth provider), Storage bucket `ged-documents` com política RLS, obter `SUPABASE_URL` e `SUPABASE_ANON_KEY` | Supabase project health: verde, bucket criado, variáveis documentadas em `.env.example` | - | cc:TODO |
+| 1.3 | Criar schema inicial do banco via migrations SQL: tabelas `tenants`, `users`, `roles`, `permissions`, `departments`, `user_preferences` com RLS habilitado | `supabase db push` passa, tabelas existem com RLS policies, seed de roles iniciais inserido | 1.2 | cc:TODO |
+| 1.4 | Configurar Docker Compose para desenvolvimento local (PostgreSQL local + Redis) e script `pnpm dev` que sobe API + web em paralelo | `docker-compose up` sobe sem erro, `pnpm dev` inicia API em :3001 e web em :5173 | 1.1, 1.2 | cc:TODO |
+| 1.5 | Configurar variáveis de ambiente: `.env.example` com todas as vars necessárias (Supabase, Claude API, Google OAuth, Redis, JWT secret), `.env.local` para dev | `.env.example` cobre 100% das vars usadas no código, README documenta como preencher | 1.1 | cc:TODO |
+
+---
+
+## Phase 2: Autenticação e IAM (RBAC)
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 2.1 | Implementar login via Google OAuth2 no backend (NestJS Guard + Supabase Auth): rota `GET /auth/google`, callback `GET /auth/google/callback`, emitir JWT httpOnly cookie ao fim | Login com conta Google redireciona para `/dashboard`, cookie `access_token` está presente como httpOnly, não há senha trafegando na rede | 1.3 | cc:TODO |
+| 2.2 | Implementar middleware de autenticação NestJS: `JwtAuthGuard` valida token do cookie a cada request, extrai `userId` e `role` para o request context | Requisição sem cookie retorna 401, requisição com cookie expirado retorna 401, requisição válida prossegue com `req.user` preenchido | 2.1 | cc:TODO |
+| 2.3 | Implementar `RolesGuard` e decorator `@Roles(...)` para RBAC: proteção de endpoints por role, matriz de permissões carregada do banco (`permissions` table) | Endpoint com `@Roles('director')` retorna 403 para usuário `assistant`, retorna 200 para `director`; matrix de permissões é consultada do banco, não hardcoded | 2.2 | cc:TODO |
+| 2.4 | Criar tela de login frontend: página `/login` com botão "Entrar com Google Workspace", logo da cooperativa, sem campo de senha | Página renderiza sem erro, clique no botão redireciona para Google OAuth, após auth redireciona para `/dashboard` | 2.1 | cc:TODO |
+| 2.5 | Criar endpoint e UI de gerenciamento de usuários: listar usuários, alterar role, ativar/desativar conta (somente `super_admin`) | CRUD de usuários funcional via API, protegido por `@Roles('super_admin')`, lista de usuários exibe nome, e-mail, role, status | 2.3 | cc:TODO |
+| 2.6 | Implementar logout: `POST /auth/logout` limpa o cookie httpOnly, frontend redireciona para `/login` | Após logout, cookie `access_token` não existe mais, acesso a `/dashboard` redireciona para `/login` | 2.2 | cc:TODO |
+
+---
+
+## Phase 3: Gerenciamento de Projetos — Core
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 3.1 | Schema de banco: tabelas `workspaces`, `boards`, `board_columns`, `cards`, `card_comments`, `card_attachments` com RLS: usuário vê apenas workspaces do seu `department_id` | Migration SQL executada, RLS policies impedem usuário de ler boards de outro departamento (testado via SQL) | 1.3 | cc:TODO |
+| 3.2 | CRUD de Workspaces e Boards via API NestJS: `WorkspacesModule`, `BoardsModule` com controllers, services, DTOs validados com `class-validator` | Endpoints `POST /workspaces`, `GET /workspaces`, `POST /workspaces/:id/boards`, `GET /boards/:id` retornam 200/201 com dados corretos, 403 para role sem acesso | 3.1, 2.3 | cc:TODO |
+| 3.3 | CRUD de Colunas e Cards: `ColumnsModule`, `CardsModule`; cards com campos: título, descrição, responsáveis (`user_ids[]`), prazo, prioridade, cor RGB, tags | Endpoints CRUD de colunas e cards funcionam; campo `color` aceita valores HEX/RGB e persiste corretamente | 3.2 | cc:TODO |
+| 3.4 | Drag-and-drop de cards no frontend: integrar `@dnd-kit/core` no board view — mover card entre colunas e reordenar dentro da coluna; enviar `PATCH /cards/:id/position` ao soltar | Card arrastado e solto em nova coluna persiste nova posição após reload; ordem das colunas também é reordenável via drag | 3.3 | cc:TODO |
+| 3.5 | Realtime: subscribe Supabase Realtime no canal do board — quando outro usuário move um card, todos os viewers do mesmo board atualizam sem reload | Abrir mesmo board em 2 abas: mover card na aba 1 atualiza posição na aba 2 em < 1s sem reload | 3.4 | cc:TODO |
+| 3.6 | Visualização Lista: renderizar cards do board em tabela com colunas configuráveis (título, responsável, prazo, prioridade, status), ordenação por coluna, filtros por responsável/prazo/prioridade | Alternar para view Lista mostra todos os cards em tabela, ordenação por prazo funciona, filtro por responsável reduz a lista corretamente | 3.4 | cc:TODO |
+| 3.7 | Visualização Calendário: cards com prazo aparecem em calendário mensal (biblioteca `react-big-calendar`); clique no card abre modal de detalhes | Cards com `due_date` aparecem no dia correto no calendário, clique abre modal sem erro | 3.4 | cc:TODO |
+| 3.8 | Modal de card detalhado: edição inline de todos os campos, checklist (sub-tarefas), seção de comentários com @mention, upload de anexos (< 10MB, via Supabase Storage) | Modal abre ao clicar no card, todos os campos são editáveis inline com auto-save após 1s de inatividade, @mention sugere usuários do workspace | 3.3 | cc:TODO |
+| 3.9 | Notificações: `NotificationsModule` — quando card é atribuído a usuário ou prazo está em 24h, criar notification no banco e emitir via WebSocket para o usuário; badge no sino do header | Badge exibe contagem de não lidas, clicar no sino lista notificações, marcar como lida remove do badge | 3.5 | cc:TODO |
+
+---
+
+## Phase 4: UI/UX — Personalização e Identidade Visual
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 4.1 | Implementar dark mode / light mode: toggle no header, persistir em `user_preferences` no banco e em `localStorage`; usar Tailwind CSS `dark:` classes em todos os componentes | Alternar tema muda imediatamente sem flash, preferência persiste após logout/login, todos os componentes principais renderizam corretamente em dark e light | Phase 3 | cc:TODO |
+| 4.2 | Seletor de cor RGB para boards e cards: componente `ColorPicker` com input HEX + sliders RGB + paleta de cores rápidas; cor persiste no banco | Picker abre ao clicar no ícone de cor, selecionar cor via slider atualiza preview em tempo real, salvar persiste no banco e reflete no board | 3.3 | cc:TODO |
+| 4.3 | Layout principal estilo Monday.com: sidebar esquerda recolhível com workspaces/boards, header com busca global, breadcrumbs, sino de notificações, avatar do usuário | Layout responsivo: sidebar colapsa em mobile, breadcrumbs refletem navegação atual, busca retorna resultados de cards e documentos | Phase 3 | cc:TODO |
+| 4.4 | Componente de sidebar de navegação: agrupamento por workspace/board, ícones de departamento, indicador de cards com prazo vencido (badge vermelho), reordenamento por drag | Sidebar lista todos os boards acessíveis pelo usuário, badge de prazo vencido atualiza em tempo real, pode reordenar boards por drag | 4.3 | cc:TODO |
+| 4.5 | Animações e micro-interações: transição suave ao mover cards, skeleton loaders em listas, toast notifications para ações (card criado, salvo, erro) | Card em drag tem opacidade 0.8 e sombra elevada, skeleton aparece durante fetch, toast "Card salvo" aparece após edição | 3.4, 4.3 | cc:TODO |
+| 4.6 | Página de perfil do usuário: foto (Google avatar), nome, departamento, role, tema preferido, histórico de atividade recente | Página `/profile` exibe dados corretos do usuário logado, alteração de tema na página persiste igual ao toggle do header | 4.1 | cc:TODO |
+
+---
+
+## Phase 5: GED — Gestão Eletrônica de Documentos
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 5.1 | Schema de banco GED: tabelas `documents`, `document_versions`, `document_categories`, `document_access_log` com RLS por role; política: `compliance` e acima leem tudo, `assistant` sem acesso | Migration executada, query de `assistant` retorna 0 documentos, query de `compliance` retorna todos do seu departamento | 1.3 | cc:TODO |
+| 5.2 | Upload e armazenamento seguro de documentos: `DocumentsModule` NestJS — upload via `multipart/form-data` para Supabase Storage bucket privado; gerar URL assinada (TTL 1h) para download | Upload de arquivo PDF/DOCX/XLSX < 50MB funciona, arquivo no bucket não é publicamente acessível, URL assinada expira após 1h | 5.1, 2.3 | cc:TODO |
+| 5.3 | CRUD de documentos com versionamento: criar nova versão ao fazer upload de arquivo existente, manter histórico de versões, restaurar versão anterior | Novo upload de doc com mesmo nome cria `version 2`, histórico mostra v1 e v2, restaurar v1 cria v3 com conteúdo de v1 | 5.2 | cc:TODO |
+| 5.4 | Log de auditoria de documentos: registrar em `document_access_log` cada acesso (visualização), download, edição, exclusão — com `user_id`, `timestamp`, `ip_address`, `action` | Acessar documento cria 1 linha no log com dados corretos, endpoint `GET /documents/:id/audit-log` retorna histórico (somente `super_admin`/`compliance`) | 5.2 | cc:TODO |
+| 5.5 | Watermark automático em PDFs baixados: ao gerar URL de download, processar PDF com `pdf-lib` para adicionar watermark semitransparente com nome do usuário + data na diagonal | Download de PDF inclui watermark "Baixado por João Silva — 2026-05-26" em todas as páginas, visível mas não obstrui texto | 5.2 | cc:TODO |
+| 5.6 | Interface GED — listagem e navegação: sidebar do GED com sub-módulos (Instruções, Auditorias, Processos, Manuais etc.), busca full-text dentro do GED, filtros por categoria/departamento/data | Todas as 11 categorias GED são navegáveis na sidebar, busca retorna documentos contendo o termo (PostgreSQL `tsvector`), filtros funcionam em combinação | 5.3, 4.3 | cc:TODO |
+| 5.7 | Editor/visualizador de fluxogramas: integrar `React Flow` para criar e editar fluxogramas de processos dentro do GED; salvar JSON do fluxograma no banco | Criar novo fluxograma abre editor React Flow, arrastar nós e conectar funciona, salvar persiste JSON, visualizar renderiza o fluxograma salvo | 5.3 | cc:TODO |
+| 5.8 | Ciclo de vida da informação: campo `review_date` e `expiration_date` nos documentos; job diário (NestJS `@Cron`) que envia e-mail para responsável quando documento está 30 dias antes da revisão/expiração | Job cron executa diariamente, documentos com revisão em 30 dias geram e-mail de aviso para `owner_id`, documentos expirados ficam marcados com badge "Expirado" na lista | 5.3 | cc:TODO |
+| 5.9 | Controle de acesso por documento (ACL): além do RBAC de role, permitir compartilhar documento com usuário específico (mesmo fora do role padrão); gerenciar via modal "Permissões do documento" | Compartilhar doc com `assistant` específico dá acesso apenas a ele (não a todos os assistants), revogar acesso remove da lista do usuário imediatamente | 5.2, 2.3 | cc:TODO |
+
+---
+
+## Phase 6: IA Assistente
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 6.1 | Configurar Anthropic SDK no backend: `AiModule` com `AiService` que encapsula chamadas ao Claude Haiku; rate limiting por usuário (20 chamadas/hora via Redis); log de todas as chamadas em `ai_suggestions` | `AiService.generateCompletion()` funciona, exceder 20 chamadas/hora retorna 429, todas as chamadas salvas no banco com `user_id`, `prompt_hash`, `response`, `tokens_used` | 1.4, Phase 2 | cc:TODO |
+| 6.2 | Sugestão de próximas tarefas: botão "Sugerir próxima tarefa" no board — envia contexto do projeto (cards em WIP, prazos, responsáveis) ao Claude, exibe 3 sugestões de novos cards | Clicar no botão retorna 3 sugestões relevantes em < 5s, cada sugestão tem título + descrição + prioridade sugerida, botão "Adicionar como card" cria o card | 6.1, 3.3 | cc:TODO |
+| 6.3 | Análise de riscos do projeto: botão "Analisar riscos" no board — Claude analisa cards atrasados, dependências, responsáveis sobrecarregados e retorna lista de riscos priorizados | Análise retorna 3-5 riscos identificados com severidade (baixo/médio/alto) e sugestão de mitigação, resultado salvo em `ai_suggestions` com link para o board | 6.1, 3.3 | cc:TODO |
+| 6.4 | Oportunidades de melhoria/automação GED: na tela GED, botão "Sugerir melhorias" — Claude analisa documentos recentes, frequência de revisões e sugere automações (ex: "Processo X parece repetitivo, considere automatizar") | Sugestões exibidas como cards na seção "Oportunidades" do GED, cada sugestão pode ser marcada como "Em análise", "Implementada" ou "Descartada" | 6.1, 5.6 | cc:TODO |
+| 6.5 | Resumo de reuniões: no sub-módulo Reuniões do GED, após adicionar ata, botão "Gerar resumo" — Claude gera bullets de deliberações e responsáveis identificados no texto | Resumo gerado em < 10s, exibe até 10 bullets com deliberações, cada item tem checkbox para "Criar card de tarefa" a partir da deliberação | 6.1, 5.6 | cc:TODO |
+| 6.6 | Geração de relatório assistida por IA: na tela de Relatórios, botão "Gerar narrativa" — Claude recebe dados tabulares do relatório e escreve parágrafo de análise em português corporativo | Narrativa de 2-4 parágrafos gerada em < 15s, coerente com os dados exibidos, sem alucinar números não presentes nos dados enviados | 6.1, Phase 7 | cc:TODO |
+
+---
+
+## Phase 7: Painel Admin
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 7.1 | Rota `/admin` protegida com dupla autenticação: além do JWT de `super_admin`, exigir TOTP (Google Authenticator) configurado no primeiro acesso; `qr_code_secret` gerado com `speakeasy` | Acessar `/admin` sem TOTP configurado exibe QR code de setup, após configurar exige código de 6 dígitos a cada login no admin, código inválido retorna 401 | 2.3 | cc:TODO |
+| 7.2 | Gerenciamento de usuários no admin: tabela de todos os usuários com busca, filtro por role/departamento/status, ações: alterar role, ativar/desativar, forçar logout (invalidar todas as sessões) | Alterar role de um usuário reflete imediatamente (próximo request do usuário tem nova role), desativar impede login, "forçar logout" invalida JWT via blacklist no Redis | 7.1, 2.5 | cc:TODO |
+| 7.3 | Matrix de permissões de menus: tabela role × módulo com checkboxes; salvar atualiza a tabela `permissions` no banco; mudança afeta todos os usuários daquela role em < 30s (cache TTL) | Matrix editável no admin, desabilitar "GED" para role `manager` faz sidebar do GED desaparecer para todos os managers sem precisar de logout | 7.1, 2.3 | cc:TODO |
+| 7.4 | Gerenciamento de tarefas no admin: busca de qualquer card por título/ID, soft-delete com motivo obrigatório, restaurar card deletado dentro de 30 dias, log de todas as exclusões | Deletar card via admin o move para "Lixeira" (não aparece no board), restaurar o devolve ao board original, log mostra quem deletou, quando e motivo | 7.1, 3.3 | cc:TODO |
+| 7.5 | Parâmetros do sistema via admin: formulário para configurar: tamanho máximo de upload (MB), TTL de URL assinada do GED (horas), limite de chamadas IA por usuário/hora, e-mail de notificações de sistema | Alterar limite de upload para 100MB e fazer upload de arquivo de 80MB funciona; alterar limite IA para 5/hora e fazer 6ª chamada retorna 429 | 7.1, 5.2, 6.1 | cc:TODO |
+| 7.6 | Dashboard de monitoramento no admin: usuários ativos agora (Redis SET), storage usado no bucket GED (Supabase Management API), tokens IA consumidos no mês, top 10 boards mais ativos | Dashboard carrega em < 3s, contagem de usuários ativos reflete realidade (testar com 2 sessões abertas = 2 ativos) | 7.1 | cc:TODO |
+
+---
+
+## Phase 8: Relatórios
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 8.1 | Módulo de relatórios: `ReportsModule` NestJS com queries parametrizadas para: tarefas por status × período, tarefas por responsável × departamento, documentos GED acessados, riscos abertos | Endpoints retornam JSON estruturado, respostas em < 2s para até 10k registros (testar com dados seed), dados filtráveis por `department_id`, `date_from`, `date_to` | Phase 3, Phase 5 | cc:TODO |
+| 8.2 | Interface de relatórios: seletor de tipo + filtros (departamento, equipe, período), gráficos com `recharts` (barras, pizza, linhas), tabela paginada com os dados | Gráfico de barras de "tarefas por status" renderiza corretamente, filtrar por departamento atualiza o gráfico sem reload de página | 8.1, Phase 4 | cc:TODO |
+| 8.3 | Exportação PDF: botão "Exportar PDF" gera relatório formatado com logo, título, filtros usados, gráficos e tabela usando `@react-pdf/renderer` no frontend ou `puppeteer` no backend | PDF gerado em < 15s para relatório de 500 registros, contém logo, data de geração, filtros e dados completos, sem truncamento | 8.2 | cc:TODO |
+| 8.4 | Exportação Excel: botão "Exportar Excel" gera `.xlsx` com `exceljs` — abas: dados brutos, sumário, gráfico pivot | Arquivo .xlsx abre no Excel/LibreOffice sem erro, aba "Dados" contém todas as linhas filtradas, aba "Sumário" agrega por período | 8.1 | cc:TODO |
+| 8.5 | Relatórios agendados: formulário para agendar envio automático semanal/mensal por e-mail usando NestJS `@Cron` + `nodemailer`; destinatários configuráveis | Agendar relatório mensal de tarefas para director@cooperativa.com.br: no dia configurado, e-mail chega com PDF anexo; cancelar agendamento para o envio | 8.3 | cc:TODO |
+
+---
+
+## Phase 9: Segurança e Escala
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 9.1 | Rate limiting global: `@nestjs/throttler` com Redis store — 100 req/min por IP para rotas públicas, 300 req/min por usuário autenticado; rotas de IA com limite próprio | Fazer 101 requests em 1 minuto retorna 429 na 101ª, após 1 minuto limite reseta, rotas `/ai/*` respeitam limite de 20/hora por usuário | Phase 2 | cc:TODO |
+| 9.2 | Helmet + CORS + CSP: configurar `helmet` no NestJS (HSTS, X-Frame-Options, CSP), CORS apenas para domínios do Vercel/produção, remover headers que expõem stack | `curl -I` na API não exibe `X-Powered-By`, CSP bloqueia scripts inline em `curl` de domínio não autorizado, HSTS header presente em HTTPS | Phase 2 | cc:TODO |
+| 9.3 | Validação de entrada: todos os DTOs com `class-validator` + `class-transformer`, nenhum input de usuário é interpolado diretamente em SQL (usar TypeORM query builder), sanitização de HTML em campos de texto livre | Enviar payload com SQL injection em `title` de card é tratado como texto literal (sem execução), campo `description` com `<script>` é sanitizado para `&lt;script&gt;` | Phase 3 | cc:TODO |
+| 9.4 | Connection pooling para 200 usuários: configurar `PgBouncer` via Supabase (já incluído), limitar `max_connections` do pool, testar com `k6` simulando 200 usuários simultâneos fazendo GET /boards | Teste `k6` com 200 VUs durante 60s: p95 de latência < 2s, 0 erros 5xx, sem `too many connections` no PostgreSQL | Phase 3 | cc:TODO |
+| 9.5 | Auditoria geral do sistema: log em `audit_logs` de todas as ações mutativas (criar/editar/deletar card, documento, usuário) com `user_id`, `action`, `entity_type`, `entity_id`, `old_value`, `new_value`, `ip`, `timestamp` | Editar título de card gera 1 linha no audit_log com old e new value, endpoint `GET /audit-logs` (super_admin only) retorna logs paginados e filtráveis | Phase 3, Phase 5 | cc:TODO |
+| 9.6 | Testes de segurança: rodar `npm audit` e corrigir vulnerabilidades críticas/altas; testar autenticação (acesso sem token, token expirado, token de outro usuário) | `npm audit` retorna 0 vulnerabilidades críticas ou altas, todos os testes de auth descritos acima retornam 401/403 (não dados de outro usuário) | Phase 9 | cc:TODO |
+
+---
+
+## Phase 10: Deploy e Monitoramento
+
+| Task | Conteúdo | DoD | Depends | Status |
+|------|----------|-----|---------|--------|
+| 10.1 | Deploy frontend no Vercel: configurar projeto Vercel apontando para `apps/web`, variáveis de ambiente de produção, preview deploy por PR | URL de produção `https://coopwork.vercel.app` (ou domínio próprio) carrega o app, PR de teste gera preview URL funcional | Phase 4 | cc:TODO |
+| 10.2 | Deploy backend no Railway: criar projeto Railway com serviço Node.js (`apps/api`) + Redis add-on, configurar env vars de produção, health check em `GET /health` | Railway mostra serviço `Running`, `GET /health` retorna `{"status":"ok"}`, API responde na URL pública | Phase 9 | cc:TODO |
+| 10.3 | Configurar domínio customizado e SSL: apontar subdomínio `app.cooperativa.coop.br` para Vercel e `api.cooperativa.coop.br` para Railway; SSL automático via Let's Encrypt | Ambas as URLs HTTPS sem aviso de certificado, `curl -I` mostra `HSTS` header, HTTP redireciona para HTTPS | 10.1, 10.2 | cc:TODO |
+| 10.4 | CI/CD pipeline (GitHub Actions): workflow que executa `lint`, `type-check`, `build` em cada PR; deploy automático para produção no merge para `main` | PR com erro de lint bloqueia merge, PR limpo passa checks, merge para `main` dispara deploy automático no Vercel e Railway | Phase 9 | cc:TODO |
+| 10.5 | Monitoramento de erros: integrar Sentry (free tier) no frontend e backend; configurar alertas para erros 5xx e erros de autenticação | Erro JavaScript no frontend aparece no Sentry em < 1min, erro 500 no backend também capturado, alertas chegam por e-mail | 10.2 | cc:TODO |
+| 10.6 | Seed de dados iniciais e documentação de onboarding: script de seed com 1 tenant (cooperativa), 5 usuários de teste (1 por role), 2 workspaces, 5 boards com cards de exemplo | `pnpm db:seed` cria dados sem erro, todos os 5 usuários conseguem logar, cada um vê apenas o que é permitido pelo seu role | Phase 9 | cc:TODO |
+
+---
+
+## Resumo de Fases
+
+| Fase | Estimativa | Prioridade |
+|------|-----------|-----------|
+| Phase 1 — Fundação | 3-4 sessões | Required |
+| Phase 2 — Autenticação/IAM | 4-5 sessões | Required |
+| Phase 3 — Task Management Core | 8-10 sessões | Required |
+| Phase 4 — UI/UX | 4-5 sessões | Required |
+| Phase 5 — GED | 8-10 sessões | Required |
+| Phase 6 — IA Assistente | 4-5 sessões | Recommended |
+| Phase 7 — Painel Admin | 5-6 sessões | Required |
+| Phase 8 — Relatórios | 4-5 sessões | Recommended |
+| Phase 9 — Segurança/Escala | 4-5 sessões | Required |
+| Phase 10 — Deploy/CI | 2-3 sessões | Required |
+
+**Total estimado**: ~50-58 sessões de desenvolvimento com Claude Code
