@@ -34,16 +34,16 @@ Northv/
 
 ## Stack Técnica
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui |
-| Backend | Node.js + NestJS + TypeScript |
-| Banco | PostgreSQL via Supabase |
-| Auth | Supabase Auth + Google Workspace OAuth2 |
-| Storage GED | Supabase Storage (AES-256) |
-| IA | Anthropic Claude Haiku API |
-| Realtime | Supabase Realtime (WebSocket) |
-| Deploy | Vercel (web) + Railway (api) + Supabase (DB/Storage) |
+| Camada      | Tecnologia                                              |
+| ----------- | ------------------------------------------------------- |
+| Frontend    | React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui |
+| Backend     | Node.js + NestJS + TypeScript                           |
+| Banco       | PostgreSQL via Supabase                                 |
+| Auth        | Supabase Auth + Google Workspace OAuth2                 |
+| Storage GED | Supabase Storage (AES-256)                              |
+| IA          | Anthropic Claude Haiku API                              |
+| Realtime    | Supabase Realtime (WebSocket)                           |
+| Deploy      | Vercel (web) + Railway (api) + Supabase (DB/Storage)    |
 
 ## Como começar
 
@@ -57,34 +57,29 @@ Northv/
 
 ### Setup inicial
 
-1. **Clonar o repositório**
-   ```bash
-   cd C:\Users\Gabriel\Desktop\Claude_Code\HighPerson\Produtos\Northv
-   ```
+**Pre-requisitos**: Node.js 20+, pnpm 9+, Docker
 
-2. **Instalar dependências**
+1. **Instalar dependencias**
+
    ```bash
    pnpm install
    ```
 
-3. **Copiar variáveis de ambiente**
+2. **Copiar e preencher variaveis de ambiente**
+
    ```bash
    cp .env.example .env.local
+   # Edite .env.local com suas credenciais reais
    ```
 
-4. **Preencher .env.local com suas chaves** (Supabase, Claude API, Google OAuth)
+3. **Iniciar banco local**
 
-5. **Iniciar banco local (Docker)**
    ```bash
    docker-compose up -d
-   ```
-
-6. **Executar migrations**
-   ```bash
    pnpm db:push
    ```
 
-7. **Iniciar dev server**
+4. **Iniciar dev server**
    ```bash
    pnpm dev
    ```
@@ -92,6 +87,19 @@ Northv/
 - Frontend: http://localhost:5173
 - API: http://localhost:3001
 - Supabase Studio: http://localhost:54323
+
+### Onde obter cada credencial
+
+| Variavel                                                         | Onde obter                                                                        |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | supabase.com -> Dashboard -> Project Settings -> API                              |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                       | Google Cloud Console -> APIs & Services -> Credentials -> OAuth 2.0 Client        |
+| `ANTHROPIC_API_KEY`                                              | console.anthropic.com -> Settings -> API Keys                                     |
+| `JWT_SECRET`                                                     | Gerar: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `REDIS_URL`                                                      | Local: `docker run -d -p 6379:6379 redis` - redis://localhost:6379                |
+| `SMTP_*`                                                         | Qualquer SMTP (Gmail, SendGrid, Resend, etc.)                                     |
+
+> **Atencao**: Nunca comite arquivos `.env` reais. Apenas `.env.example` e versionado.
 
 ## Arquivos de Planejamento
 
@@ -102,18 +110,18 @@ Leia `spec.md` primeiro para entender a visão. Use `Plans.md` como referência 
 
 ## Fases de Desenvolvimento
 
-| Fase | Tarefas | Status |
-|------|---------|--------|
-| Phase 1 — Fundação | 5 | cc:TODO |
-| Phase 2 — Autenticação/IAM | 6 | cc:TODO |
-| Phase 3 — Task Management | 9 | cc:TODO |
-| Phase 4 — UI/UX | 6 | cc:TODO |
-| Phase 5 — GED | 9 | cc:TODO |
-| Phase 6 — IA Assistente | 6 | cc:TODO |
-| Phase 7 — Admin Panel | 6 | cc:TODO |
-| Phase 8 — Relatórios | 5 | cc:TODO |
-| Phase 9 — Segurança/Escala | 6 | cc:TODO |
-| Phase 10 — Deploy/CI | 6 | cc:TODO |
+| Fase                       | Tarefas | Status  |
+| -------------------------- | ------- | ------- |
+| Phase 1 — Fundação         | 5       | cc:TODO |
+| Phase 2 — Autenticação/IAM | 6       | cc:TODO |
+| Phase 3 — Task Management  | 9       | cc:TODO |
+| Phase 4 — UI/UX            | 6       | cc:TODO |
+| Phase 5 — GED              | 9       | cc:TODO |
+| Phase 6 — IA Assistente    | 6       | cc:TODO |
+| Phase 7 — Admin Panel      | 6       | cc:TODO |
+| Phase 8 — Relatórios       | 5       | cc:TODO |
+| Phase 9 — Segurança/Escala | 6       | cc:TODO |
+| Phase 10 — Deploy/CI       | 6       | cc:TODO |
 
 **Total**: ~50-58 sessões estimadas
 

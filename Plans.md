@@ -14,7 +14,7 @@ Stack: React + NestJS + PostgreSQL (Supabase) + Vercel + Railway
 | 1.2  | Configurar projeto Supabase: criar banco PostgreSQL, habilitar Auth (Google OAuth provider), Storage bucket `ged-documents` com política RLS, obter `SUPABASE_URL` e `SUPABASE_ANON_KEY` | Supabase project health: verde, bucket criado, variáveis documentadas em `.env.example`     | -        | cc:TODO |
 | 1.3  | Criar schema inicial do banco via migrations SQL: tabelas `tenants`, `users`, `roles`, `permissions`, `departments`, `user_preferences` com RLS habilitado                               | `supabase db push` passa, tabelas existem com RLS policies, seed de roles iniciais inserido | 1.2      | cc:TODO |
 | 1.4  | Configurar Docker Compose para desenvolvimento local (PostgreSQL local + Redis) e script `pnpm dev` que sobe API + web em paralelo                                                       | `docker-compose up` sobe sem erro, `pnpm dev` inicia API em :3001 e web em :5173            | 1.1, 1.2 | cc:TODO |
-| 1.5  | Configurar variáveis de ambiente: `.env.example` com todas as vars necessárias (Supabase, Claude API, Google OAuth, Redis, JWT secret), `.env.local` para dev                            | `.env.example` cobre 100% das vars usadas no código, README documenta como preencher        | 1.1      | cc:TODO |
+| 1.5  | Configurar variáveis de ambiente: `.env.example` com todas as vars necessárias (Supabase, Claude API, Google OAuth, Redis, JWT secret), `.env.local` para dev                            | `.env.example` cobre 100% das vars usadas no código, README documenta como preencher        | 1.1      | cc:完了 |
 
 ---
 

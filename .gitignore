@@ -38,3 +38,10 @@ coverage/
 # Cache
 .turbo/
 .turbopack/
+
+# Apps-level env files
+apps/**/.env
+apps/**/.env.local
+apps/**/.env.*.local
+packages/**/.env
+packages/**/.env.local
