@@ -6,7 +6,12 @@
     "dev": "pnpm -r --parallel dev",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "db:logs": "docker-compose logs -f postgres",
+    "infra:up": "docker-compose up -d",
+    "infra:down": "docker-compose down"
   },
   "devDependencies": {
     "husky": "^9.0.0",
