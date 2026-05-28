@@ -5,6 +5,7 @@ import BoardPage from '../pages/BoardPage';
 import ProfilePage from '../pages/ProfilePage';
 import GedPage from '../pages/GedPage';
 import ReportsPage from '../pages/ReportsPage';
+import AdminPage from '../pages/AdminPage';
 import AppLayout from '../components/layout/AppLayout';
 
 export default function AppRouter() {
@@ -19,6 +20,7 @@ export default function AppRouter() {
         <Route path="/documents" element={<GedPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
