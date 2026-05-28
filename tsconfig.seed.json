@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES2021",
+    "esModuleInterop": true,
+    "outDir": "dist-seed",
+    "rootDir": "."
+  },
+  "include": ["scripts/seed.ts"]
+}
