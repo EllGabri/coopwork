@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
+import BoardPage from '../pages/BoardPage';
 import AppLayout from '../components/layout/AppLayout';
 
 export default function AppRouter() {
@@ -10,6 +11,7 @@ export default function AppRouter() {
       {/* Rotas autenticadas dentro do AppLayout */}
       <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/boards/:boardId" element={<BoardPage />} />
         <Route path="/projects" element={<PlaceholderPage title="Projetos" />} />
         <Route path="/documents" element={<PlaceholderPage title="Documentos (GED)" />} />
         <Route path="/reports" element={<PlaceholderPage title="Relatórios" />} />
