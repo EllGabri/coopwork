@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useBoardRealtime } from '../../hooks/useBoardRealtime';
 import {
   DndContext,
   DragEndEvent,
@@ -24,6 +25,8 @@ export function KanbanBoard({ board }: Props) {
   const [columns, setColumns] = useState<Column[]>(() =>
     [...(board.board_columns ?? [])].sort((a, b) => a.position - b.position),
   );
+
+  useBoardRealtime(board.id, setColumns);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
