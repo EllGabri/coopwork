@@ -4,6 +4,7 @@ import { KanbanBoard } from '../components/board/KanbanBoard';
 import { BoardListView } from '../components/board/BoardListView';
 import { BoardCalendarView } from '../components/board/BoardCalendarView';
 import { AiTaskSuggest } from '../components/board/AiTaskSuggest';
+import { AiRiskAnalysis } from '../components/board/AiRiskAnalysis';
 import type { Board } from '../types/board';
 import { api } from '../lib/api';
 
@@ -72,11 +73,14 @@ export default function BoardPage() {
           <p className="ml-2 text-sm text-muted-foreground">{board.description}</p>
         )}
         {boardId && board.board_columns?.[0]?.id && (
-          <AiTaskSuggest
-            boardId={boardId}
-            firstColumnId={board.board_columns[0].id}
-            onCardCreated={() => setBoardKey((k) => k + 1)}
-          />
+          <>
+            <AiTaskSuggest
+              boardId={boardId}
+              firstColumnId={board.board_columns[0].id}
+              onCardCreated={() => setBoardKey((k) => k + 1)}
+            />
+            <AiRiskAnalysis boardId={boardId} />
+          </>
         )}
         <div className="ml-auto flex rounded-md border border-border overflow-hidden">
           {(['kanban', 'list', 'calendar'] as const).map((v) => (
