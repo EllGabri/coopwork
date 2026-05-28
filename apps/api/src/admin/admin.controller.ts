@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  Res,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminAuthGuard } from './admin-auth.guard';
@@ -61,5 +74,47 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   getAdminMe(@CurrentUser() user: AuthUser) {
     return { userId: user.userId, email: user.email, role: user.role };
+  }
+
+  // ---- User management (requires AdminAuthGuard) ----
+
+  @Get('users')
+  @UseGuards(AdminAuthGuard)
+  listUsers(
+    @CurrentUser() user: AuthUser,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.listUsers({ search, role, status, tenantId: user.tenantId });
+  }
+
+  @Patch('users/:id/role')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  changeRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('role') role: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.changeUserRole(id, role, user.userId);
+  }
+
+  @Patch('users/:id/status')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  changeStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('status') status: 'active' | 'inactive',
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.changeUserStatus(id, status, user.userId);
+  }
+
+  @Post('users/:id/force-logout')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  forceLogout(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.forceLogout(id);
   }
 }

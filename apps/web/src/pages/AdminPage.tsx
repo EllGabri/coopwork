@@ -1,16 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
 
 type AdminState = 'loading' | 'setup-required' | 'verify-required' | 'authenticated';
+type AdminSection = 'home' | 'users';
+
+interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  status: string;
+  last_login_at: string | null;
+}
+
+const ROLES = ['super_admin', 'director', 'manager', 'compliance', 'assistant'];
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [state, setState] = useState<AdminState>('loading');
+  const [section, setSection] = useState<AdminSection>('home');
   const [qrCode, setQrCode] = useState('');
   const [setupSecret, setSetupSecret] = useState('');
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Users management state
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [userLoading, setUserLoading] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -45,6 +62,52 @@ export default function AdminPage() {
       toast('Erro ao configurar TOTP', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const fetchUsers = useCallback(
+    async (search = '') => {
+      setUserLoading(true);
+      try {
+        const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+        const data = await api.get<AdminUser[]>(`/admin/users${qs}`);
+        setUsers(data);
+      } catch {
+        toast('Erro ao carregar usuários', 'error');
+      } finally {
+        setUserLoading(false);
+      }
+    },
+    [toast],
+  );
+
+  const handleRoleChange = async (userId: string, role: string) => {
+    try {
+      await api.patch(`/admin/users/${userId}/role`, { role });
+      toast('Role atualizado');
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
+    } catch {
+      toast('Erro ao atualizar role', 'error');
+    }
+  };
+
+  const handleStatusToggle = async (user: AdminUser) => {
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    try {
+      await api.patch(`/admin/users/${user.id}/status`, { status: newStatus });
+      toast(`Usuário ${newStatus === 'active' ? 'ativado' : 'desativado'}`);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)));
+    } catch {
+      toast('Erro ao alterar status', 'error');
+    }
+  };
+
+  const handleForceLogout = async (userId: string) => {
+    try {
+      await api.post(`/admin/users/${userId}/force-logout`, {});
+      toast('Sessão invalidada');
+    } catch {
+      toast('Erro ao forçar logout', 'error');
     }
   };
 
@@ -177,52 +240,173 @@ export default function AdminPage() {
 
   // authenticated
   return (
-    <div className="mx-auto max-w-4xl p-6 space-y-6">
+    <div className="mx-auto max-w-5xl p-6 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Painel Administrativo</h1>
+        <div className="flex items-center gap-2">
+          {section !== 'home' && (
+            <button
+              onClick={() => setSection('home')}
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              ← Voltar
+            </button>
+          )}
+          <h1 className="text-xl font-bold text-foreground">
+            {section === 'home' ? 'Painel Administrativo' : 'Usuários'}
+          </h1>
+        </div>
         <button
           onClick={async () => {
             await api.post('/admin/totp/logout', {});
             setState('verify-required');
             setCode('');
+            setSection('home');
           }}
           className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
         >
           Sair do admin
         </button>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          {
-            title: 'Usuários',
-            desc: 'Gerenciar usuários, roles e status',
-            icon: '👥',
-            href: '#users',
-          },
-          { title: 'Permissões', desc: 'Matrix role × módulo', icon: '🔒', href: '#permissions' },
-          { title: 'Parâmetros', desc: 'Configurações do sistema', icon: '⚙️', href: '#params' },
-          { title: 'Tarefas', desc: 'Buscar e moderar cards', icon: '📋', href: '#tasks' },
-          {
-            title: 'Monitoramento',
-            desc: 'Dashboard de uso e métricas',
-            icon: '📊',
-            href: '#monitoring',
-          },
-          { title: 'Auditoria IA', desc: 'Log de chamadas ao Claude', icon: '🤖', href: '#ai-log' },
-        ].map((item) => (
-          <div
-            key={item.title}
-            className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 transition-colors cursor-pointer"
-          >
-            <div className="text-2xl mb-2">{item.icon}</div>
-            <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+
+      {/* Home grid */}
+      {section === 'home' && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              title: 'Usuários',
+              desc: 'Gerenciar roles, status e sessões',
+              icon: '👥',
+              key: 'users' as const,
+            },
+            { title: 'Permissões', desc: 'Matrix role × módulo', icon: '🔒', key: null },
+            { title: 'Parâmetros', desc: 'Configurações do sistema', icon: '⚙️', key: null },
+            { title: 'Tarefas', desc: 'Buscar e moderar cards', icon: '📋', key: null },
+            { title: 'Monitoramento', desc: 'Dashboard de uso e métricas', icon: '📊', key: null },
+            { title: 'Auditoria IA', desc: 'Log de chamadas ao Claude', icon: '🤖', key: null },
+          ].map((item) => (
+            <div
+              key={item.title}
+              onClick={() => {
+                if (item.key) {
+                  setSection(item.key);
+                  if (item.key === 'users') void fetchUsers();
+                }
+              }}
+              className={`rounded-lg border border-border bg-card p-4 transition-colors ${item.key ? 'hover:border-primary/40 cursor-pointer' : 'opacity-60'}`}
+            >
+              <div className="text-2xl mb-2">{item.icon}</div>
+              <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+              {!item.key && (
+                <p className="text-[10px] text-muted-foreground/60 mt-1">Em breve (7.3–7.6)</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Users section */}
+      {section === 'users' && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              type="search"
+              placeholder="Buscar por nome ou e-mail…"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void fetchUsers(userSearch)}
+              className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <button
+              onClick={() => void fetchUsers(userSearch)}
+              className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+            >
+              Buscar
+            </button>
           </div>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground text-center">
-        Módulos administrativos detalhados implementados nas tarefas 7.2–7.6.
-      </p>
+
+          {userLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 rounded bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                      Usuário
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                      Role
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                      Status
+                    </th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-2.5">
+                        <p className="text-sm font-medium text-foreground">
+                          {u.full_name ?? u.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <select
+                          value={u.role}
+                          onChange={(e) => void handleRoleChange(u.id, e.target.value)}
+                          className="rounded border border-border bg-background px-2 py-1 text-xs text-foreground"
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          onClick={() => void handleStatusToggle(u)}
+                          className={`rounded px-2 py-0.5 text-xs font-medium ${u.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}
+                        >
+                          {u.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          onClick={() => void handleForceLogout(u.id)}
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Forçar logout
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-sm text-muted-foreground"
+                      >
+                        Nenhum usuário encontrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

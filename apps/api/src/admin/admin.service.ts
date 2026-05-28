@@ -1,18 +1,74 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
+import { BlacklistService } from '../auth/blacklist.service';
 
 const APP_NAME = 'CoopWork Admin';
-const ADMIN_TOKEN_TTL_SECONDS = 8 * 3600; // 8 hours
+const ADMIN_TOKEN_TTL_SECONDS = 8 * 3600;
+const JWT_TTL_SECONDS = 7 * 24 * 3600;
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly supabase: SupabaseService,
     private readonly jwtService: JwtService,
+    private readonly blacklist: BlacklistService,
   ) {}
+
+  // ---- User management ----
+
+  async listUsers(opts: { search?: string; role?: string; status?: string; tenantId: string }) {
+    let query = this.supabase.admin
+      .from('users')
+      .select('id, email, full_name, role, status, department_id, last_login_at, created_at')
+      .eq('tenant_id', opts.tenantId)
+      .order('created_at', { ascending: false });
+
+    if (opts.role) query = query.eq('role', opts.role);
+    if (opts.status) query = query.eq('status', opts.status);
+    if (opts.search) {
+      query = query.or(`email.ilike.%${opts.search}%,full_name.ilike.%${opts.search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async changeUserRole(targetUserId: string, newRole: string, adminUserId: string) {
+    if (targetUserId === adminUserId) {
+      throw new ForbiddenException('Não é possível alterar o próprio role');
+    }
+    const { error } = await this.supabase.admin
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', targetUserId);
+    if (error) throw new Error(error.message);
+  }
+
+  async changeUserStatus(
+    targetUserId: string,
+    newStatus: 'active' | 'inactive',
+    adminUserId: string,
+  ) {
+    if (targetUserId === adminUserId) {
+      throw new ForbiddenException('Não é possível desativar a própria conta');
+    }
+    const { error } = await this.supabase.admin
+      .from('users')
+      .update({ status: newStatus })
+      .eq('id', targetUserId);
+    if (error) throw new Error(error.message);
+  }
+
+  async forceLogout(targetUserId: string) {
+    await this.blacklist.add(targetUserId, JWT_TTL_SECONDS);
+    this.logger.log(`Force logout: ${targetUserId}`);
+  }
 
   async getTotpStatus(userId: string): Promise<{ enabled: boolean }> {
     const { data } = await this.supabase.admin

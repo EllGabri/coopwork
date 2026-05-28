@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './admin-auth.guard';
+import { BlacklistService } from '../auth/blacklist.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AdminAuthGuard } from './admin-auth.guard';
     }),
   ],
   controllers: [AdminController],
-  providers: [AdminService, AdminAuthGuard],
+  providers: [AdminService, AdminAuthGuard, BlacklistService],
   exports: [AdminService, AdminAuthGuard],
 })
 export class AdminModule {}
