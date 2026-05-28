@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
+import { FlowchartEditor } from '../components/ged/FlowchartEditor';
 
 interface DocCategory {
   id: string;
@@ -19,6 +20,8 @@ interface Document {
   tags: string[];
   review_date: string | null;
   expiration_date: string | null;
+  is_flowchart: boolean;
+  flowchart_json?: { nodes: unknown[]; edges: unknown[] } | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +66,7 @@ export default function GedPage() {
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [flowchartDoc, setFlowchartDoc] = useState<Document | null>(null);
 
   // Load categories
   useEffect(() => {
@@ -200,6 +204,31 @@ export default function GedPage() {
           <span className="ml-auto text-xs text-muted-foreground">
             {documents.length} documento{documents.length !== 1 ? 's' : ''}
           </span>
+          <button
+            onClick={() => {
+              const emptyDoc: Document = {
+                id: 'new',
+                title: 'Novo Fluxograma',
+                description: null,
+                category_id: null,
+                mime_type: null,
+                size_bytes: null,
+                current_version: 1,
+                status: 'active',
+                tags: [],
+                review_date: null,
+                expiration_date: null,
+                is_flowchart: true,
+                flowchart_json: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+              setFlowchartDoc(emptyDoc);
+            }}
+            className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:bg-muted transition-colors"
+          >
+            + Fluxograma
+          </button>
         </div>
 
         {/* Table */}
@@ -278,14 +307,23 @@ export default function GedPage() {
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">
                       {new Date(doc.updated_at).toLocaleDateString('pt-BR')}
                     </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => void handleDownload(doc)}
-                        disabled={downloading === doc.id}
-                        className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
-                      >
-                        {downloading === doc.id ? '…' : 'Baixar'}
-                      </button>
+                    <td className="px-4 py-3 flex gap-1">
+                      {doc.is_flowchart ? (
+                        <button
+                          onClick={() => setFlowchartDoc(doc)}
+                          className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          Editar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => void handleDownload(doc)}
+                          disabled={downloading === doc.id}
+                          className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
+                        >
+                          {downloading === doc.id ? '…' : 'Baixar'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -294,6 +332,22 @@ export default function GedPage() {
           )}
         </div>
       </div>
+
+      {/* Flowchart editor modal */}
+      {flowchartDoc && (
+        <FlowchartEditor
+          documentId={flowchartDoc.id}
+          documentTitle={flowchartDoc.title}
+          initialJson={
+            flowchartDoc.flowchart_json as Parameters<typeof FlowchartEditor>[0]['initialJson']
+          }
+          onClose={() => setFlowchartDoc(null)}
+          onSaved={() => {
+            setFlowchartDoc(null);
+            fetchDocuments();
+          }}
+        />
+      )}
     </div>
   );
 }
