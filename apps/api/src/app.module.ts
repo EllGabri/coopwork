@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AiModule } from './ai/ai.module';
 import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 import { SystemParamsService } from './admin/system-params.service';
 
 @Module({
@@ -33,6 +34,7 @@ import { SystemParamsService } from './admin/system-params.service';
     DocumentsModule,
     AiModule,
     AdminModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService, SystemParamsService],
