@@ -42,7 +42,7 @@ export class DocumentsService {
     let query = this.supabase.admin
       .from('documents')
       .select(
-        'id, title, description, category_id, department_id, owner_id, status, current_version, tags, review_date, expiration_date, size_bytes, mime_type, created_at, updated_at',
+        'id, title, description, category_id, department_id, owner_id, status, current_version, tags, review_date, expiration_date, size_bytes, mime_type, is_flowchart, created_at, updated_at',
       )
       .eq('tenant_id', tenantId)
       .neq('status', 'archived')

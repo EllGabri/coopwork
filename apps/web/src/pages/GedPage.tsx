@@ -131,7 +131,8 @@ export default function GedPage() {
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? '—';
 
   const isExpired = (doc: Document) =>
-    doc.expiration_date && new Date(doc.expiration_date) < new Date();
+    doc.status === 'expired' ||
+    (!!doc.expiration_date && new Date(doc.expiration_date) < new Date());
 
   return (
     <div className="flex h-full overflow-hidden">
