@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -23,5 +23,15 @@ export class AiController {
       systemPrompt: body.systemPrompt,
       userMessage: body.userMessage,
     });
+  }
+
+  @Post('boards/:boardId/suggest-tasks')
+  suggestTasks(@Param('boardId', ParseUUIDPipe) boardId: string, @CurrentUser() user: AuthUser) {
+    return this.aiService.suggestNextTasks(boardId, user.userId, user.tenantId);
+  }
+
+  @Post('boards/:boardId/analyze-risks')
+  analyzeRisks(@Param('boardId', ParseUUIDPipe) boardId: string, @CurrentUser() user: AuthUser) {
+    return this.aiService.analyzeRisks(boardId, user.userId, user.tenantId);
   }
 }

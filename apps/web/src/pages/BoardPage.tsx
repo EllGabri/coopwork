@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { KanbanBoard } from '../components/board/KanbanBoard';
 import { BoardListView } from '../components/board/BoardListView';
 import { BoardCalendarView } from '../components/board/BoardCalendarView';
+import { AiTaskSuggest } from '../components/board/AiTaskSuggest';
 import type { Board } from '../types/board';
 import { api } from '../lib/api';
 
@@ -14,6 +15,7 @@ export default function BoardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>('kanban');
+  const [boardKey, setBoardKey] = useState(0);
 
   useEffect(() => {
     if (!boardId) return;
@@ -69,6 +71,13 @@ export default function BoardPage() {
         {board.description && (
           <p className="ml-2 text-sm text-muted-foreground">{board.description}</p>
         )}
+        {boardId && board.board_columns?.[0]?.id && (
+          <AiTaskSuggest
+            boardId={boardId}
+            firstColumnId={board.board_columns[0].id}
+            onCardCreated={() => setBoardKey((k) => k + 1)}
+          />
+        )}
         <div className="ml-auto flex rounded-md border border-border overflow-hidden">
           {(['kanban', 'list', 'calendar'] as const).map((v) => (
             <button
@@ -82,7 +91,7 @@ export default function BoardPage() {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        {view === 'kanban' && <KanbanBoard board={board} />}
+        {view === 'kanban' && <KanbanBoard key={boardKey} board={board} />}
         {view === 'list' && <BoardListView columns={board.board_columns ?? []} />}
         {view === 'calendar' && <BoardCalendarView columns={board.board_columns ?? []} />}
       </div>

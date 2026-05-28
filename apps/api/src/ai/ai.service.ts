@@ -104,6 +104,87 @@ export class AiService {
     }
   }
 
+  async suggestNextTasks(
+    boardId: string,
+    userId: string,
+    tenantId: string,
+  ): Promise<Array<{ title: string; description: string; priority: string }>> {
+    // Build board context
+    const { data: board } = await this.supabase.admin
+      .from('boards')
+      .select('name, board_columns(name, cards(title, priority, due_date))')
+      .eq('id', boardId)
+      .single();
+
+    const boardContext = JSON.stringify(board ?? { name: 'Board' }, null, 2);
+    const systemPrompt =
+      'Você é um assistente de gestão de projetos para uma cooperativa de crédito brasileira. ' +
+      'Dado o estado atual do board, sugira exatamente 3 novas tarefas relevantes. ' +
+      'Responda APENAS com JSON válido no formato: ' +
+      '[{"title":"...","description":"...","priority":"low|medium|high|urgent"}]';
+
+    const raw = await this.generateCompletion({
+      userId,
+      tenantId,
+      feature: 'suggest_tasks',
+      systemPrompt,
+      userMessage: `Estado atual do board:\n${boardContext}\n\nSugira 3 próximas tarefas.`,
+    });
+
+    try {
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array in response');
+      const suggestions = JSON.parse(jsonMatch[0]) as Array<{
+        title: string;
+        description: string;
+        priority: string;
+      }>;
+      return suggestions.slice(0, 3);
+    } catch {
+      this.logger.error('Failed to parse AI suggestions');
+      return [];
+    }
+  }
+
+  async analyzeRisks(
+    boardId: string,
+    userId: string,
+    tenantId: string,
+  ): Promise<Array<{ risk: string; severity: string; mitigation: string }>> {
+    const { data: board } = await this.supabase.admin
+      .from('boards')
+      .select('name, board_columns(name, cards(title, priority, due_date, assignee_ids))')
+      .eq('id', boardId)
+      .single();
+
+    const boardContext = JSON.stringify(board ?? { name: 'Board' }, null, 2);
+    const systemPrompt =
+      'Você é um analista de riscos de projetos para uma cooperativa de crédito brasileira. ' +
+      'Analise o board e identifique 3 a 5 riscos principais (cards atrasados, sobrecargas, dependências). ' +
+      'Responda APENAS com JSON válido no formato: ' +
+      '[{"risk":"...","severity":"baixo|médio|alto","mitigation":"..."}]';
+
+    const raw = await this.generateCompletion({
+      userId,
+      tenantId,
+      feature: 'risk_analysis',
+      systemPrompt,
+      userMessage: `Estado atual do board:\n${boardContext}\n\nIdentifique os riscos.`,
+    });
+
+    try {
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array in response');
+      return JSON.parse(jsonMatch[0]) as Array<{
+        risk: string;
+        severity: string;
+        mitigation: string;
+      }>;
+    } catch {
+      return [];
+    }
+  }
+
   private async logSuggestion(opts: {
     userId: string;
     tenantId: string;
