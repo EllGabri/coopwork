@@ -211,6 +211,124 @@ export class DocumentsService {
     return data ?? [];
   }
 
+  async getVersions(id: string, tenantId: string, role: string) {
+    await this.findOne(id, tenantId, role);
+    const { data, error } = await this.supabase.admin
+      .from('document_versions')
+      .select('id, version, mime_type, size_bytes, uploaded_by, comment, created_at')
+      .eq('document_id', id)
+      .order('version', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async uploadNewVersion(
+    id: string,
+    file: Express.Multer.File,
+    comment: string | undefined,
+    tenantId: string,
+    userId: string,
+    role: string,
+  ) {
+    if (!WRITE_ROLES.includes(role))
+      throw new ForbiddenException('Sem permissão para versionar documentos');
+    if (!ALLOWED_MIME_TYPES.includes(file.mimetype))
+      throw new BadRequestException('Tipo de arquivo não permitido');
+    if (file.size > MAX_SIZE_BYTES)
+      throw new BadRequestException('Arquivo deve ser menor que 50 MB');
+
+    const doc = await this.findOne(id, tenantId, role);
+    const nextVersion = (doc.current_version as number) + 1;
+
+    const ext = file.originalname.split('.').pop() ?? 'bin';
+    const objectPath = `${tenantId}/${userId}/${Date.now()}_v${nextVersion}.${ext}`;
+
+    const { error: uploadError } = await this.supabase.admin.storage
+      .from(BUCKET)
+      .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    await this.supabase.admin.from('document_versions').insert({
+      document_id: id,
+      version: nextVersion,
+      storage_path: objectPath,
+      mime_type: file.mimetype,
+      size_bytes: file.size,
+      uploaded_by: userId,
+      comment: comment ?? `Versão ${nextVersion}`,
+    });
+
+    const { data: updated, error: updateError } = await this.supabase.admin
+      .from('documents')
+      .update({
+        storage_path: objectPath,
+        mime_type: file.mimetype,
+        size_bytes: file.size,
+        current_version: nextVersion,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError || !updated)
+      throw new Error(updateError?.message ?? 'Falha ao atualizar versão');
+    await this.logAccess(id, userId, 'edit', null);
+    return updated;
+  }
+
+  async restoreVersion(
+    id: string,
+    version: number,
+    tenantId: string,
+    userId: string,
+    role: string,
+  ) {
+    if (!WRITE_ROLES.includes(role))
+      throw new ForbiddenException('Sem permissão para restaurar versões');
+
+    const doc = await this.findOne(id, tenantId, role);
+
+    const { data: versionRow, error: vErr } = await this.supabase.admin
+      .from('document_versions')
+      .select('*')
+      .eq('document_id', id)
+      .eq('version', version)
+      .single();
+
+    if (vErr || !versionRow) throw new NotFoundException(`Versão ${version} não encontrada`);
+
+    const nextVersion = (doc.current_version as number) + 1;
+
+    await this.supabase.admin.from('document_versions').insert({
+      document_id: id,
+      version: nextVersion,
+      storage_path: versionRow.storage_path,
+      mime_type: versionRow.mime_type,
+      size_bytes: versionRow.size_bytes,
+      uploaded_by: userId,
+      comment: `Restaurado da versão ${version}`,
+    });
+
+    const { data: updated, error: updateError } = await this.supabase.admin
+      .from('documents')
+      .update({
+        storage_path: versionRow.storage_path,
+        mime_type: versionRow.mime_type,
+        size_bytes: versionRow.size_bytes,
+        current_version: nextVersion,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError || !updated) throw new Error('Falha ao restaurar versão');
+    await this.logAccess(id, userId, 'restore_version', null);
+    return updated;
+  }
+
   async logAccess(documentId: string, userId: string, action: string, ipAddress: string | null) {
     await this.supabase.admin.from('document_access_log').insert({
       document_id: documentId,

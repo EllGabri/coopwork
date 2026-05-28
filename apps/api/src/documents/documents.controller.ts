@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseUUIDPipe,
+  ParseIntPipe,
   Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -86,5 +87,37 @@ export class DocumentsController {
   @Get(':id/audit-log')
   getAuditLog(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.documentsService.getAuditLog(id, user.tenantId, user.role);
+  }
+
+  @Get(':id/versions')
+  getVersions(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.documentsService.getVersions(id, user.tenantId, user.role);
+  }
+
+  @Post(':id/versions')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadNewVersion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('comment') comment: string | undefined,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.documentsService.uploadNewVersion(
+      id,
+      file,
+      comment,
+      user.tenantId,
+      user.userId,
+      user.role,
+    );
+  }
+
+  @Post(':id/versions/:version/restore')
+  restoreVersion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('version', ParseIntPipe) version: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.documentsService.restoreVersion(id, version, user.tenantId, user.userId, user.role);
   }
 }
