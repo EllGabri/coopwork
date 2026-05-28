@@ -56,7 +56,13 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true, // enables class-transformer (required for @SanitizeText decorators)
+    }),
+  );
 
   await app.listen(process.env.PORT ?? 3001);
 }

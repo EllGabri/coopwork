@@ -10,17 +10,20 @@ import {
   IsUUID,
   Matches,
 } from 'class-validator';
+import { SanitizeText, SanitizeRichText } from '../common/sanitize';
 
 const HEX_RGB_REGEX = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 
 export class CreateCardDto {
   @IsString()
   @MaxLength(200)
+  @SanitizeText()
   title!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(5000)
+  @SanitizeRichText()
   description?: string;
 
   @IsOptional()
@@ -55,11 +58,13 @@ export class UpdateCardDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @SanitizeText()
   title?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(5000)
+  @SanitizeRichText()
   description?: string;
 
   @IsOptional()

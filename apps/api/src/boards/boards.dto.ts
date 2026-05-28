@@ -1,13 +1,16 @@
 import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { SanitizeText } from '../common/sanitize';
 
 export class CreateBoardDto {
   @IsString()
   @MaxLength(100)
+  @SanitizeText()
   name!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @SanitizeText()
   description?: string;
 
   @IsOptional()
