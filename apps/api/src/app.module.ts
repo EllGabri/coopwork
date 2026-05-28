@@ -13,6 +13,7 @@ import { CardsModule } from './cards/cards.module';
 import { CommentsModule } from './comments/comments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DocumentsModule } from './documents/documents.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { DocumentsModule } from './documents/documents.module';
     CommentsModule,
     NotificationsModule,
     DocumentsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
