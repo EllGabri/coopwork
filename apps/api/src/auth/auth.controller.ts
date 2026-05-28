@@ -1,7 +1,10 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService, AuthUser } from './auth.service';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtPayload } from './strategies/jwt.strategy';
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +30,12 @@ export class AuthController {
     });
 
     res.redirect(process.env.WEB_URL ?? 'http://localhost:5173');
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMe(@CurrentUser() user: JwtPayload & { userId: string }) {
+    return { userId: user.userId, email: user.email, role: user.role, tenantId: user.tenantId };
   }
 
   @Get('logout')
