@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AuditLogService } from '../common/audit-log.service';
 import { CreateCardDto, UpdateCardDto, MoveCardDto } from './cards.dto';
 
 @Injectable()
 export class CardsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly audit: AuditLogService,
+  ) {}
 
   async findByColumn(columnId: string) {
     const { data, error } = await this.supabase.admin
@@ -61,10 +65,30 @@ export class CardsService {
       .select()
       .single();
     if (error) throw new Error(error.message);
+    void this.audit.log({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'card',
+      entityId: data.id,
+      newValue: { title: (data as { title: string }).title, columnId, boardId },
+    });
     return data;
   }
 
-  async update(id: string, dto: UpdateCardDto) {
+  async update(
+    id: string,
+    dto: UpdateCardDto,
+    tenantId?: string,
+    userId?: string,
+    ipAddress?: string | null,
+  ) {
+    // Fetch current state for old_value
+    const { data: before } = await this.supabase.admin
+      .from('cards')
+      .select('title, description, priority, color, due_date, assignee_ids, tags')
+      .eq('id', id)
+      .single();
     const { data, error } = await this.supabase.admin
       .from('cards')
       .update(dto)
@@ -72,6 +96,18 @@ export class CardsService {
       .select()
       .single();
     if (error || !data) throw new NotFoundException('Card não encontrado');
+    if (tenantId && userId) {
+      void this.audit.log({
+        tenantId,
+        userId,
+        action: 'update',
+        entityType: 'card',
+        entityId: id,
+        oldValue: (before as Record<string, unknown>) ?? undefined,
+        newValue: dto as unknown as Record<string, unknown>,
+        ipAddress,
+      });
+    }
     return data;
   }
 
@@ -86,7 +122,17 @@ export class CardsService {
     return data;
   }
 
-  async remove(id: string) {
+  async remove(id: string, tenantId?: string, userId?: string) {
+    if (tenantId && userId) {
+      void this.audit.log({
+        tenantId,
+        userId,
+        action: 'archive',
+        entityType: 'card',
+        entityId: id,
+        newValue: { is_archived: true },
+      });
+    }
     const { error } = await this.supabase.admin
       .from('cards')
       .update({ is_archived: true })

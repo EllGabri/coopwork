@@ -20,6 +20,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { AdminService } from './admin.service';
 import { SystemParamsService } from './system-params.service';
+import { AuditLogService } from '../common/audit-log.service';
 
 type AuthUser = JwtPayload & { userId: string };
 
@@ -31,6 +32,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly sysParams: SystemParamsService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Get('totp/status')
@@ -121,6 +123,32 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   forceLogout(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.forceLogout(id);
+  }
+
+  // ---- Audit logs ----
+
+  @Get('audit-logs')
+  @UseGuards(AdminAuthGuard)
+  getAuditLogs(
+    @CurrentUser() user: AuthUser,
+    @Query('entityType') entityType?: string,
+    @Query('entityId') entityId?: string,
+    @Query('userId') userId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.auditLogService.findAll({
+      tenantId: user.tenantId,
+      entityType,
+      entityId,
+      userId,
+      dateFrom,
+      dateTo,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
   }
 
   // ---- Dashboard ----
