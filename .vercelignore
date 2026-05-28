@@ -1,0 +1,10 @@
+apps/api
+apps/web/node_modules
+node_modules
+.env
+.env.local
+.env.*.local
+supabase
+scripts
+*.md
+docker-compose.yml
