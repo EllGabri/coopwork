@@ -7,6 +7,8 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { BoardsModule } from './boards/boards.module';
+import { ColumnsModule } from './columns/columns.module';
+import { CardsModule } from './cards/cards.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { BoardsModule } from './boards/boards.module';
     UsersModule,
     WorkspacesModule,
     BoardsModule,
+    ColumnsModule,
+    CardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
