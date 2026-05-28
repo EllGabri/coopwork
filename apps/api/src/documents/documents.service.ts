@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './documents.dto';
 
@@ -142,25 +143,70 @@ export class DocumentsService {
     return doc;
   }
 
-  async getSignedDownloadUrl(
+  async downloadDocument(
     id: string,
     tenantId: string,
     userId: string,
+    userName: string,
     role: string,
     ipAddress: string | null,
-  ) {
+  ): Promise<
+    | { type: 'redirect'; signedUrl: string }
+    | { type: 'stream'; buffer: Buffer; mimeType: string; filename: string }
+  > {
     const doc = await this.findOne(id, tenantId, role);
-
     if (!doc.storage_path) throw new BadRequestException('Documento sem arquivo associado');
 
-    const { data, error } = await this.supabase.admin.storage
-      .from(BUCKET)
-      .createSignedUrl(doc.storage_path, SIGNED_URL_TTL_SECONDS);
-
-    if (error || !data?.signedUrl) throw new Error('Falha ao gerar URL de download');
-
     await this.logAccess(id, userId, 'download', ipAddress);
-    return { signedUrl: data.signedUrl, expiresIn: SIGNED_URL_TTL_SECONDS };
+
+    const isPdf = (doc.mime_type as string | null) === 'application/pdf';
+
+    if (!isPdf) {
+      const { data, error } = await this.supabase.admin.storage
+        .from(BUCKET)
+        .createSignedUrl(doc.storage_path as string, SIGNED_URL_TTL_SECONDS);
+      if (error || !data?.signedUrl) throw new Error('Falha ao gerar URL de download');
+      return { type: 'redirect', signedUrl: data.signedUrl };
+    }
+
+    // Download PDF and apply watermark
+    const { data: blob, error: dlError } = await this.supabase.admin.storage
+      .from(BUCKET)
+      .download(doc.storage_path as string);
+
+    if (dlError || !blob) throw new Error('Falha ao baixar o PDF');
+
+    const srcBuffer = Buffer.from(await blob.arrayBuffer());
+    const watermarked = await this.addWatermark(srcBuffer, userName);
+
+    return {
+      type: 'stream',
+      buffer: watermarked,
+      mimeType: 'application/pdf',
+      filename: `${(doc.title as string).replace(/[^a-z0-9]/gi, '_')}.pdf`,
+    };
+  }
+
+  private async addWatermark(pdfBytes: Buffer, userName: string): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+    const dateStr = new Date().toLocaleDateString('pt-BR');
+    const text = `Baixado por ${userName} — ${dateStr}`;
+    const pages = pdfDoc.getPages();
+
+    for (const page of pages) {
+      const { width, height } = page.getSize();
+      page.drawText(text, {
+        x: width / 2 - text.length * 3.5,
+        y: height / 2,
+        size: 24,
+        color: rgb(0.5, 0.5, 0.5),
+        opacity: 0.3,
+        rotate: degrees(45),
+      });
+    }
+
+    const out = await pdfDoc.save();
+    return Buffer.from(out);
   }
 
   async update(id: string, dto: UpdateDocumentDto, tenantId: string, userId: string, role: string) {

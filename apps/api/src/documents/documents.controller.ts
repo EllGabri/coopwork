@@ -13,9 +13,10 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   Req,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -62,20 +63,32 @@ export class DocumentsController {
   }
 
   @Get(':id/download')
-  getDownloadUrl(
+  async download(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthUser,
     @Req() req: Request,
+    @Res() res: Response,
   ) {
     const ip =
       (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] ?? req.ip ?? null;
-    return this.documentsService.getSignedDownloadUrl(
+    const userName = (user as AuthUser & { fullName?: string }).fullName ?? user.email;
+    const result = await this.documentsService.downloadDocument(
       id,
       user.tenantId,
       user.userId,
+      userName,
       user.role,
       ip,
     );
+    if (result.type === 'redirect') {
+      return res.json({ signedUrl: result.signedUrl, expiresIn: 3600 });
+    }
+    res.set({
+      'Content-Type': result.mimeType,
+      'Content-Disposition': `attachment; filename="${result.filename}"`,
+      'Content-Length': result.buffer.length,
+    });
+    res.send(result.buffer);
   }
 
   @Patch(':id')
