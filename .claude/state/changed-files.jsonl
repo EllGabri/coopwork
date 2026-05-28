@@ -37,3 +37,6 @@
 {"file":"apps/web/src/components/layout/Sidebar.tsx","action":"Write","timestamp":"2026-05-28T02:52:38Z","important":false}
 {"file":"apps/web/src/components/layout/Header.tsx","action":"Write","timestamp":"2026-05-28T02:52:57Z","important":false}
 {"file":"apps/web/src/components/layout/AppLayout.tsx","action":"Write","timestamp":"2026-05-28T02:53:03Z","important":false}
+{"file":"apps/web/src/contexts/ThemeContext.tsx","action":"Write","timestamp":"2026-05-28T02:57:58Z","important":false}
+{"file":"apps/web/src/hooks/useTheme.ts","action":"Write","timestamp":"2026-05-28T02:58:03Z","important":false}
+{"file":"apps/web/index.html","action":"Edit","timestamp":"2026-05-28T02:58:30Z","important":false}

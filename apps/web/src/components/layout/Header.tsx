@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
+import { useTheme } from '../../hooks/useTheme';
 
 const routeLabels: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -36,13 +37,8 @@ function Breadcrumbs() {
 }
 
 export default function Header() {
-  const [isDark, setIsDark] = useState(false);
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4">
@@ -84,7 +80,7 @@ export default function Header() {
         className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         aria-label="Alternar tema"
       >
-        {isDark ? (
+        {resolvedTheme === 'dark' ? (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
