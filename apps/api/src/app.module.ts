@@ -9,6 +9,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { BoardsModule } from './boards/boards.module';
 import { ColumnsModule } from './columns/columns.module';
 import { CardsModule } from './cards/cards.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CardsModule } from './cards/cards.module';
     BoardsModule,
     ColumnsModule,
     CardsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

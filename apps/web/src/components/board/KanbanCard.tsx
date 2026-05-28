@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Card } from '../../types/board';
+import { CardDetailModal } from './CardDetailModal';
 
 interface Props {
   card: Card;
@@ -15,6 +17,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export function KanbanCard({ card, isDragging }: Props) {
+  const [showModal, setShowModal] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
 
   const style = {
@@ -26,37 +29,47 @@ export function KanbanCard({ card, isDragging }: Props) {
   const isOverdue = card.due_date && new Date(card.due_date) < new Date() && !card.is_archived;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        ...style,
-        borderLeftColor: card.color ?? 'transparent',
-        borderLeftWidth: card.color ? 3 : 0,
-      }}
-      className="rounded-md border border-border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none"
-      {...attributes}
-      {...listeners}
-    >
-      <p className="text-sm font-medium text-card-foreground leading-snug">{card.title}</p>
-      <div className="mt-2 flex items-center gap-2 flex-wrap">
-        <span
-          className={`rounded px-1.5 py-0.5 text-xs font-medium ${PRIORITY_COLORS[card.priority]}`}
-        >
-          {card.priority}
-        </span>
-        {card.due_date && (
+    <>
+      <div
+        ref={setNodeRef}
+        style={{
+          ...style,
+          borderLeftColor: card.color ?? 'transparent',
+          borderLeftWidth: card.color ? 3 : 0,
+        }}
+        className="rounded-md border border-border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none"
+        {...attributes}
+        {...listeners}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          setShowModal(true);
+        }}
+      >
+        <p className="text-sm font-medium text-card-foreground leading-snug">{card.title}</p>
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
           <span
-            className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}
+            className={`rounded px-1.5 py-0.5 text-xs font-medium ${PRIORITY_COLORS[card.priority]}`}
           >
-            {new Date(card.due_date).toLocaleDateString('pt-BR')}
+            {card.priority}
           </span>
-        )}
-        {card.tags.slice(0, 2).map((tag) => (
-          <span key={tag} className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-            {tag}
-          </span>
-        ))}
+          {card.due_date && (
+            <span
+              className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}
+            >
+              {new Date(card.due_date).toLocaleDateString('pt-BR')}
+            </span>
+          )}
+          {card.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag}
+              className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
-    </div>
+      {showModal && <CardDetailModal cardId={card.id} onClose={() => setShowModal(false)} />}
+    </>
   );
 }
