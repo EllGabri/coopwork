@@ -14,6 +14,7 @@ import {
 import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
 import { downloadReportPdf } from '../components/reports/ReportPdf';
+import { downloadReportExcel } from '../components/reports/ExcelExport';
 
 type ReportType = 'tasks-by-status' | 'tasks-by-assignee' | 'documents-accessed' | 'open-risks';
 
@@ -79,6 +80,7 @@ export default function ReportsPage() {
   const [narrative, setNarrative] = useState('');
   const [generating, setGenerating] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingXlsx, setExportingXlsx] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
@@ -132,6 +134,32 @@ export default function ReportsPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    if (!result) return;
+    setExportingXlsx(true);
+    try {
+      const reportLabel = REPORT_TYPES.find((r) => r.value === reportType)?.label ?? reportType;
+      const rawRows = [
+        ...((result.overdueCards as unknown as Record<string, string | number>[]) ?? []),
+        ...((result.recentLogs as unknown as Record<string, string | number>[]) ?? []),
+      ];
+      await downloadReportExcel({
+        reportType,
+        reportLabel,
+        total: result.total,
+        chartData: getChartData(reportType, result),
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        rawRows: rawRows.length ? rawRows : undefined,
+        generatedAt: new Date().toISOString(),
+      });
+    } catch {
+      toast('Erro ao gerar Excel', 'error');
+    } finally {
+      setExportingXlsx(false);
+    }
+  };
+
   const handleGenerateNarrative = async () => {
     if (!result) return;
     setGenerating(true);
@@ -171,6 +199,14 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl font-bold text-foreground">Relatórios</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => void handleExportExcel()}
+            disabled={exportingXlsx || !result}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            <span>📗</span>
+            {exportingXlsx ? 'Gerando Excel…' : 'Exportar Excel'}
+          </button>
           <button
             onClick={() => void handleExportPdf()}
             disabled={exportingPdf || !result}
