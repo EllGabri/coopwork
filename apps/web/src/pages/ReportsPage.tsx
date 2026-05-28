@@ -81,6 +81,13 @@ export default function ReportsPage() {
   const [generating, setGenerating] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [schedules, setSchedules] = useState<
+    { id: string; name: string; frequency: string; recipients: string[]; is_active: boolean }[]
+  >([]);
+  const [scheduleName, setScheduleName] = useState('');
+  const [scheduleFreq, setScheduleFreq] = useState<'weekly' | 'monthly'>('monthly');
+  const [scheduleEmail, setScheduleEmail] = useState('');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
@@ -131,6 +138,44 @@ export default function ReportsPage() {
       toast('Erro ao gerar PDF', 'error');
     } finally {
       setExportingPdf(false);
+    }
+  };
+
+  const loadSchedules = useCallback(async () => {
+    try {
+      const data = await api.get<typeof schedules>('/reports/schedules');
+      setSchedules(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleCreateSchedule = async () => {
+    if (!scheduleName.trim() || !scheduleEmail.trim()) return;
+    try {
+      await api.post('/reports/schedules', {
+        name: scheduleName.trim(),
+        reportType,
+        frequency: scheduleFreq,
+        recipients: [scheduleEmail.trim()],
+      });
+      toast('Agendamento criado');
+      setScheduleName('');
+      setScheduleEmail('');
+      setShowScheduleForm(false);
+      await loadSchedules();
+    } catch {
+      toast('Erro ao criar agendamento', 'error');
+    }
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    try {
+      await api.delete(`/reports/schedules/${id}`);
+      setSchedules((prev) => prev.filter((s) => s.id !== id));
+      toast('Agendamento cancelado');
+    } catch {
+      toast('Erro ao cancelar', 'error');
     }
   };
 
@@ -449,6 +494,96 @@ export default function ReportsPage() {
           </div>
         )
       )}
+
+      {/* Schedule management */}
+      <div className="rounded-lg border border-border bg-card">
+        <button
+          onClick={() => {
+            setShowScheduleForm((v) => !v);
+            if (!showScheduleForm) void loadSchedules();
+          }}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <span>📅</span> Relatórios agendados
+            {schedules.length > 0 && (
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                {schedules.length}
+              </span>
+            )}
+          </span>
+          <span className="text-muted-foreground">{showScheduleForm ? '▲' : '▼'}</span>
+        </button>
+
+        {showScheduleForm && (
+          <div className="border-t border-border p-4 space-y-4">
+            {/* Create form */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Novo agendamento para "{REPORT_TYPES.find((r) => r.value === reportType)?.label}"
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  placeholder="Nome do agendamento"
+                  value={scheduleName}
+                  onChange={(e) => setScheduleName(e.target.value)}
+                  className="flex-1 min-w-36 rounded border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <select
+                  value={scheduleFreq}
+                  onChange={(e) => setScheduleFreq(e.target.value as 'weekly' | 'monthly')}
+                  className="rounded border border-border bg-background px-2 py-1.5 text-xs text-foreground"
+                >
+                  <option value="weekly">Semanal</option>
+                  <option value="monthly">Mensal</option>
+                </select>
+                <input
+                  placeholder="E-mail destinatário"
+                  type="email"
+                  value={scheduleEmail}
+                  onChange={(e) => setScheduleEmail(e.target.value)}
+                  className="flex-1 min-w-48 rounded border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  onClick={() => void handleCreateSchedule()}
+                  disabled={!scheduleName.trim() || !scheduleEmail.trim()}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  Agendar
+                </button>
+              </div>
+            </div>
+
+            {/* Existing schedules */}
+            {schedules.length > 0 && (
+              <div className="divide-y divide-border rounded border border-border">
+                {schedules.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 px-3 py-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.frequency === 'weekly' ? 'Semanal' : 'Mensal'} ·{' '}
+                        {s.recipients.join(', ')}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}
+                    >
+                      {s.is_active ? 'Ativo' : 'Inativo'}
+                    </span>
+                    <button
+                      onClick={() => void handleDeleteSchedule(s.id)}
+                      className="text-xs text-destructive hover:underline flex-shrink-0"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* AI Narrative */}
       {(generating || narrative) && (
