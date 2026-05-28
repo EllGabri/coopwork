@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { KanbanBoard } from '../components/board/KanbanBoard';
 import { BoardListView } from '../components/board/BoardListView';
+import { BoardCalendarView } from '../components/board/BoardCalendarView';
 import type { Board } from '../types/board';
 import { api } from '../lib/api';
 
-type ViewMode = 'kanban' | 'list';
+type ViewMode = 'kanban' | 'list' | 'calendar';
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -50,26 +51,21 @@ export default function BoardPage() {
           <p className="ml-2 text-sm text-muted-foreground">{board.description}</p>
         )}
         <div className="ml-auto flex rounded-md border border-border overflow-hidden">
-          <button
-            onClick={() => setView('kanban')}
-            className={`px-3 py-1 text-xs font-medium transition-colors ${view === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-          >
-            Kanban
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`px-3 py-1 text-xs font-medium transition-colors ${view === 'list' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
-          >
-            Lista
-          </button>
+          {(['kanban', 'list', 'calendar'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${view === v ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+            >
+              {v === 'kanban' ? 'Kanban' : v === 'list' ? 'Lista' : 'Calendário'}
+            </button>
+          ))}
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        {view === 'kanban' ? (
-          <KanbanBoard board={board} />
-        ) : (
-          <BoardListView columns={board.board_columns ?? []} />
-        )}
+        {view === 'kanban' && <KanbanBoard board={board} />}
+        {view === 'list' && <BoardListView columns={board.board_columns ?? []} />}
+        {view === 'calendar' && <BoardCalendarView columns={board.board_columns ?? []} />}
       </div>
     </div>
   );
