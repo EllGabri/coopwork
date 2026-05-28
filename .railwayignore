@@ -1,0 +1,9 @@
+apps/web
+apps/web/node_modules
+node_modules/.cache
+.env
+.env.local
+supabase
+scripts/k6
+*.spec.ts
+SECURITY.md
