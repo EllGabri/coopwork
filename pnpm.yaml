@@ -2,3 +2,6 @@ overrides:
   multer: 2.1.1
   glob: 10.5.0
   picomatch: 4.0.4
+
+approvedBuilds:
+  - "@sentry/cli"

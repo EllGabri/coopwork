@@ -1,9 +1,19 @@
 import 'reflect-metadata';
+import * as Sentry from '@sentry/node';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+
+// Initialize Sentry before anything else
+if (process.env.SENTRY_DSN && process.env.NODE_ENV === 'production') {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 0.1,
+  });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -72,6 +82,10 @@ async function bootstrap() {
       hidePoweredBy: true,
     }),
   );
+
+  // Global Sentry exception filter — captures 5xx + auth errors
+  const { SentryExceptionFilter } = await import('./common/sentry-exception.filter');
+  app.useGlobalFilters(new SentryExceptionFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
