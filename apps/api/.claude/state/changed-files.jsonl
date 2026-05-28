@@ -1,0 +1,4 @@
+{"file":"src/auth/auth.module.ts","action":"Edit","timestamp":"2026-05-28T08:34:57Z","important":false}
+{"file":"src/auth/auth.service.ts","action":"Edit","timestamp":"2026-05-28T08:35:08Z","important":false}
+{"file":"src/auth/guards/jwt-auth.guard.ts","action":"Edit","timestamp":"2026-05-28T08:35:26Z","important":false}
+{"file":"src/auth/guards/google-auth.guard.ts","action":"Edit","timestamp":"2026-05-28T08:36:13Z","important":false}
