@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -8,6 +9,7 @@ type AuthUser = JwtPayload & { userId: string };
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
+@SkipThrottle() // AI routes use their own per-user rate limit via AiService
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
