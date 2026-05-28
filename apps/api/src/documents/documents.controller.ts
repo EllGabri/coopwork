@@ -30,6 +30,11 @@ type AuthUser = JwtPayload & { userId: string };
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
+  @Get('categories')
+  getCategories(@CurrentUser() user: AuthUser) {
+    return this.documentsService.getCategories(user.tenantId, user.role);
+  }
+
   @Get()
   findAll(
     @CurrentUser() user: AuthUser,

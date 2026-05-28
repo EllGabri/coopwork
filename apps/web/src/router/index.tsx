@@ -3,6 +3,7 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import BoardPage from '../pages/BoardPage';
 import ProfilePage from '../pages/ProfilePage';
+import GedPage from '../pages/GedPage';
 import AppLayout from '../components/layout/AppLayout';
 
 export default function AppRouter() {
@@ -14,7 +15,7 @@ export default function AppRouter() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/boards/:boardId" element={<BoardPage />} />
         <Route path="/projects" element={<PlaceholderPage title="Projetos" />} />
-        <Route path="/documents" element={<PlaceholderPage title="Documentos (GED)" />} />
+        <Route path="/documents" element={<GedPage />} />
         <Route path="/reports" element={<PlaceholderPage title="Relatórios" />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

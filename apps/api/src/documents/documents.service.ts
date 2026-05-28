@@ -257,6 +257,17 @@ export class DocumentsService {
     return data ?? [];
   }
 
+  async getCategories(tenantId: string, role: string) {
+    if (!READ_ROLES.includes(role)) throw new ForbiddenException('Acesso negado ao GED');
+    const { data, error } = await this.supabase.admin
+      .from('document_categories')
+      .select('id, name, description, icon')
+      .eq('tenant_id', tenantId)
+      .order('name');
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
   async getVersions(id: string, tenantId: string, role: string) {
     await this.findOne(id, tenantId, role);
     const { data, error } = await this.supabase.admin
