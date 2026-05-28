@@ -14,6 +14,7 @@ export class CardsService {
       )
       .eq('column_id', columnId)
       .eq('is_archived', false)
+      .eq('admin_deleted', false)
       .order('position');
     if (error) throw new Error(error.message);
     return data ?? [];

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -116,6 +117,38 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   forceLogout(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.forceLogout(id);
+  }
+
+  // ---- Card trash ----
+
+  @Get('cards')
+  @UseGuards(AdminAuthGuard)
+  searchCards(@CurrentUser() user: AuthUser, @Query('search') search?: string) {
+    return this.adminService.searchCards(user.tenantId, search ?? '');
+  }
+
+  @Delete('cards/:id')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  deleteCard(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('reason') reason: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.adminService.adminDeleteCard(id, user.userId, reason ?? 'Removido pelo admin');
+  }
+
+  @Post('cards/:id/restore')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  restoreCard(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.adminService.restoreCard(id, user.userId);
+  }
+
+  @Get('actions-log')
+  @UseGuards(AdminAuthGuard)
+  getActionsLog(@CurrentUser() user: AuthUser) {
+    return this.adminService.getAdminActionsLog(user.tenantId);
   }
 
   // ---- Permissions matrix ----

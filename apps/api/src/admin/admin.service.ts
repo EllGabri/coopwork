@@ -95,6 +95,74 @@ export class AdminService {
     this.logger.log(`Force logout: ${targetUserId}`);
   }
 
+  // ---- Card trash ----
+
+  async searchCards(tenantId: string, search: string) {
+    const { data, error } = await this.supabase.admin
+      .from('cards')
+      .select(
+        'id, title, priority, is_archived, admin_deleted, admin_delete_reason, admin_deleted_at, column_id, created_at',
+      )
+      .eq('tenant_id', tenantId)
+      .ilike('title', `%${search}%`)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async adminDeleteCard(cardId: string, adminId: string, reason: string) {
+    const { error } = await this.supabase.admin
+      .from('cards')
+      .update({
+        admin_deleted: true,
+        admin_deleted_by: adminId,
+        admin_deleted_at: new Date().toISOString(),
+        admin_delete_reason: reason,
+      })
+      .eq('id', cardId);
+    if (error) throw new Error(error.message);
+
+    await this.supabase.admin.from('admin_actions_log').insert({
+      admin_id: adminId,
+      action: 'card_delete',
+      entity_type: 'card',
+      entity_id: cardId,
+      reason,
+    });
+  }
+
+  async restoreCard(cardId: string, adminId: string) {
+    const { error } = await this.supabase.admin
+      .from('cards')
+      .update({
+        admin_deleted: false,
+        admin_deleted_by: null,
+        admin_deleted_at: null,
+        admin_delete_reason: null,
+      })
+      .eq('id', cardId);
+    if (error) throw new Error(error.message);
+
+    await this.supabase.admin.from('admin_actions_log').insert({
+      admin_id: adminId,
+      action: 'card_restore',
+      entity_type: 'card',
+      entity_id: cardId,
+    });
+  }
+
+  async getAdminActionsLog(tenantId: string) {
+    void tenantId;
+    const { data, error } = await this.supabase.admin
+      .from('admin_actions_log')
+      .select('id, admin_id, action, entity_type, entity_id, reason, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
   async getTotpStatus(userId: string): Promise<{ enabled: boolean }> {
     const { data } = await this.supabase.admin
       .from('users')
