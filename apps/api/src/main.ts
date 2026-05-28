@@ -28,6 +28,23 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
+  // Redirect HTTP → HTTPS in production (trust Railway/Vercel reverse proxy)
+  if (process.env.NODE_ENV === 'production') {
+    app.use(
+      (
+        req: import('express').Request,
+        res: import('express').Response,
+        next: import('express').NextFunction,
+      ) => {
+        const forwardedProto = req.headers['x-forwarded-proto'] as string | undefined;
+        if (forwardedProto && forwardedProto !== 'https') {
+          return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        }
+        return next();
+      },
+    );
+  }
+
   // Helmet — security headers
   app.use(
     helmet({
