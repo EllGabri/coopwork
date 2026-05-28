@@ -34,4 +34,9 @@ export class AiController {
   analyzeRisks(@Param('boardId', ParseUUIDPipe) boardId: string, @CurrentUser() user: AuthUser) {
     return this.aiService.analyzeRisks(boardId, user.userId, user.tenantId);
   }
+
+  @Post('ged/suggest-improvements')
+  suggestGedImprovements(@CurrentUser() user: AuthUser) {
+    return this.aiService.suggestGedImprovements(user.tenantId, user.userId);
+  }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { FlowchartEditor } from '../components/ged/FlowchartEditor';
 import { DocumentAclModal } from '../components/ged/DocumentAclModal';
+import { AiGedOpportunities } from '../components/ged/AiGedOpportunities';
 
 interface DocCategory {
   id: string;
@@ -204,6 +205,7 @@ export default function GedPage() {
               className="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground"
             />
           </div>
+          <AiGedOpportunities />
           <span className="ml-auto text-xs text-muted-foreground">
             {documents.length} documento{documents.length !== 1 ? 's' : ''}
           </span>

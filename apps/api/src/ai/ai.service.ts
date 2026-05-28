@@ -146,6 +146,47 @@ export class AiService {
     }
   }
 
+  async suggestGedImprovements(
+    tenantId: string,
+    userId: string,
+  ): Promise<Array<{ title: string; description: string; category: string }>> {
+    const { data: docs } = await this.supabase.admin
+      .from('documents')
+      .select(
+        'title, mime_type, review_date, expiration_date, current_version, created_at, updated_at',
+      )
+      .eq('tenant_id', tenantId)
+      .neq('status', 'archived')
+      .order('updated_at', { ascending: false })
+      .limit(20);
+
+    const systemPrompt =
+      'Você é um consultor de gestão documental para cooperativas de crédito brasileiras. ' +
+      'Analise os documentos recentes e sugira 3 a 5 melhorias ou automações de processos. ' +
+      'Responda APENAS com JSON no formato: ' +
+      '[{"title":"...","description":"...","category":"automação|processo|conformidade|organização"}]';
+
+    const raw = await this.generateCompletion({
+      userId,
+      tenantId,
+      feature: 'ged_improvements',
+      systemPrompt,
+      userMessage: `Documentos recentes do GED:\n${JSON.stringify(docs ?? [], null, 2)}\n\nSugira melhorias.`,
+    });
+
+    try {
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array');
+      return JSON.parse(jsonMatch[0]) as Array<{
+        title: string;
+        description: string;
+        category: string;
+      }>;
+    } catch {
+      return [];
+    }
+  }
+
   async analyzeRisks(
     boardId: string,
     userId: string,
