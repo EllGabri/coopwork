@@ -4,6 +4,7 @@ import * as QRCode from 'qrcode';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
 import { BlacklistService } from '../auth/blacklist.service';
+import { PermissionsService } from '../auth/permissions.service';
 
 const APP_NAME = 'CoopWork Admin';
 const ADMIN_TOKEN_TTL_SECONDS = 8 * 3600;
@@ -17,7 +18,31 @@ export class AdminService {
     private readonly supabase: SupabaseService,
     private readonly jwtService: JwtService,
     private readonly blacklist: BlacklistService,
+    private readonly permissionsService: PermissionsService,
   ) {}
+
+  // ---- Permissions matrix ----
+
+  async getPermissions() {
+    const { data, error } = await this.supabase.admin
+      .from('permissions')
+      .select('role, module, action, is_allowed')
+      .order('role')
+      .order('module');
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async upsertPermission(role: string, module: string, action: string, isAllowed: boolean) {
+    const { error } = await this.supabase.admin
+      .from('permissions')
+      .upsert(
+        { role, module, action, is_allowed: isAllowed },
+        { onConflict: 'role,module,action' },
+      );
+    if (error) throw new Error(error.message);
+    this.permissionsService.invalidateCache();
+  }
 
   // ---- User management ----
 

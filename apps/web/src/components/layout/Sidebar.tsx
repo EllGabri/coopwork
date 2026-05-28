@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import { Link, useLocation } from 'react-router-dom';
 import {
   DndContext,
@@ -75,6 +76,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  permModule?: string; // if set, hide if user lacks read permission on this module
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -95,6 +97,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: 'GED',
     href: '/documents',
+    permModule: 'ged',
     icon: (
       <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -109,6 +112,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: 'Relatórios',
     href: '/reports',
+    permModule: 'reports',
     icon: (
       <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -262,6 +266,7 @@ export default function Sidebar() {
   const [expanded, setExpanded] = useState(true);
   const [workspaces, setWorkspaces] = useState(MOCK_WORKSPACES);
   const location = useLocation();
+  const { can } = usePermissions();
 
   function handleDragEnd(event: DragEndEvent, workspaceId: string) {
     const { active, over } = event;
@@ -307,27 +312,29 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto p-2">
         {/* Global navigation */}
         <div className="mb-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive =
-              location.pathname === item.href || location.pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  'mb-1 flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                  !expanded && 'justify-center',
-                )}
-                title={!expanded ? item.label : undefined}
-              >
-                {item.icon}
-                {expanded && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+          {NAV_ITEMS.filter((item) => !item.permModule || can(item.permModule, 'read')).map(
+            (item) => {
+              const isActive =
+                location.pathname === item.href || location.pathname.startsWith(item.href + '/');
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    'mb-1 flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    !expanded && 'justify-center',
+                  )}
+                  title={!expanded ? item.label : undefined}
+                >
+                  {item.icon}
+                  {expanded && <span>{item.label}</span>}
+                </Link>
+              );
+            },
+          )}
         </div>
 
         {/* Workspace section — only when expanded */}

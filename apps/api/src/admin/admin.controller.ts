@@ -117,4 +117,21 @@ export class AdminController {
   forceLogout(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.forceLogout(id);
   }
+
+  // ---- Permissions matrix ----
+
+  @Get('permissions')
+  @UseGuards(AdminAuthGuard)
+  getPermissions() {
+    return this.adminService.getPermissions();
+  }
+
+  @Patch('permissions')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  upsertPermission(
+    @Body() body: { role: string; module: string; action: string; isAllowed: boolean },
+  ) {
+    return this.adminService.upsertPermission(body.role, body.module, body.action, body.isAllowed);
+  }
 }
