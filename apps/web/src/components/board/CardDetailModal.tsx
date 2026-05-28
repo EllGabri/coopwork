@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CardDetail, CardComment, ChecklistItem, CardPriority } from '../../types/board';
 import { api } from '../../lib/api';
 import { ColorPicker } from '../ui/ColorPicker';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Props {
   cardId: string;
@@ -25,6 +26,7 @@ function formatBytes(bytes: number) {
 }
 
 export function CardDetailModal({ cardId, onClose, onUpdate }: Props) {
+  const { toast } = useToast();
   const [card, setCard] = useState<CardDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,12 +61,15 @@ export function CardDetailModal({ cardId, onClose, onUpdate }: Props) {
           const updated = await api.patch<CardDetail>(`/cards/${cardId}`, patch);
           setCard(updated);
           onUpdate?.(updated);
+          toast('Card salvo');
+        } catch {
+          toast('Erro ao salvar', 'error');
         } finally {
           setSaving(false);
         }
       }, 1000);
     },
-    [cardId, onUpdate],
+    [cardId, onUpdate, toast],
   );
 
   const persistChecklist = useCallback(

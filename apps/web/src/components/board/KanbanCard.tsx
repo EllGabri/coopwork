@@ -23,7 +23,7 @@ export function KanbanCard({ card, isDragging }: Props) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.8 : 1,
   };
 
   const isOverdue = card.due_date && new Date(card.due_date) < new Date() && !card.is_archived;
@@ -37,7 +37,7 @@ export function KanbanCard({ card, isDragging }: Props) {
           borderLeftColor: card.color ?? 'transparent',
           borderLeftWidth: card.color ? 3 : 0,
         }}
-        className="rounded-md border border-border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none"
+        className={`rounded-md border border-border bg-card p-3 cursor-grab active:cursor-grabbing transition-all select-none ${isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02]' : 'shadow-sm hover:shadow-md'}`}
         {...attributes}
         {...listeners}
         onDoubleClick={(e) => {

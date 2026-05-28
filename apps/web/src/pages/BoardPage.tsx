@@ -27,8 +27,27 @@ export default function BoardPage() {
 
   if (loading)
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="flex h-full flex-col">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+          <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
+          <div className="h-5 w-40 rounded bg-muted animate-pulse" />
+          <div className="ml-auto h-7 w-44 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="flex gap-4 overflow-x-auto p-4">
+          {[1, 2, 3].map((col) => (
+            <div key={col} className="w-72 flex-shrink-0">
+              <div className="mb-3 h-9 rounded-lg bg-muted animate-pulse" />
+              <div className="space-y-2">
+                {Array.from({ length: col === 2 ? 4 : 2 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-md bg-muted animate-pulse ${i % 2 === 0 ? 'h-16' : 'h-24'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
 
