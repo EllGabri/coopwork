@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
+import { downloadReportPdf } from '../components/reports/ReportPdf';
 
 type ReportType = 'tasks-by-status' | 'tasks-by-assignee' | 'documents-accessed' | 'open-risks';
 
@@ -77,6 +78,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [narrative, setNarrative] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
@@ -103,6 +105,32 @@ export default function ReportsPage() {
   useEffect(() => {
     void fetchReport();
   }, [fetchReport]);
+
+  const handleExportPdf = async () => {
+    if (!result) return;
+    setExportingPdf(true);
+    try {
+      const reportLabel = REPORT_TYPES.find((r) => r.value === reportType)?.label ?? reportType;
+      await downloadReportPdf({
+        reportType,
+        reportLabel,
+        total: result.total,
+        chartData: getChartData(reportType, result),
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        tableRows: [
+          ...((result.overdueCards as unknown as Record<string, string>[]) ?? []),
+          ...((result.recentLogs as unknown as Record<string, string>[]) ?? []),
+        ],
+        narrative: narrative || undefined,
+        generatedAt: new Date().toISOString(),
+      });
+    } catch {
+      toast('Erro ao gerar PDF', 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const handleGenerateNarrative = async () => {
     if (!result) return;
@@ -142,14 +170,24 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl font-bold text-foreground">Relatórios</h1>
-        <button
-          onClick={() => void handleGenerateNarrative()}
-          disabled={generating || !result}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          <span>✨</span>
-          {generating ? 'Gerando narrativa…' : 'Gerar narrativa'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => void handleExportPdf()}
+            disabled={exportingPdf || !result}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            <span>📥</span>
+            {exportingPdf ? 'Gerando PDF…' : 'Exportar PDF'}
+          </button>
+          <button
+            onClick={() => void handleGenerateNarrative()}
+            disabled={generating || !result}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <span>✨</span>
+            {generating ? 'Gerando narrativa…' : 'Gerar narrativa'}
+          </button>
+        </div>
       </div>
 
       {/* Type selector */}
