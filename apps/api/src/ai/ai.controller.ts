@@ -44,4 +44,12 @@ export class AiController {
   summarizeMeeting(@Body('text') text: string, @CurrentUser() user: AuthUser) {
     return this.aiService.summarizeMeeting(text ?? '', user.userId, user.tenantId);
   }
+
+  @Post('reports/generate-narrative')
+  generateReportNarrative(
+    @Body('data') data: Record<string, unknown>,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.aiService.generateReportNarrative(data ?? {}, user.userId, user.tenantId);
+  }
 }

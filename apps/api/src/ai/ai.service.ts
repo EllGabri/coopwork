@@ -146,6 +146,26 @@ export class AiService {
     }
   }
 
+  async generateReportNarrative(
+    reportData: Record<string, unknown>,
+    userId: string,
+    tenantId: string,
+  ): Promise<string> {
+    const systemPrompt =
+      'Você é um analista de negócios sênior de uma cooperativa de crédito brasileira. ' +
+      'Escreva uma análise executiva em português corporativo com 2 a 4 parágrafos coerentes com os dados fornecidos. ' +
+      'NUNCA invente números, percentuais ou informações que não estejam nos dados. ' +
+      'Use apenas os valores exatos presentes nos dados ao mencionar métricas.';
+
+    return this.generateCompletion({
+      userId,
+      tenantId,
+      feature: 'report_narrative',
+      systemPrompt,
+      userMessage: `Dados do relatório:\n${JSON.stringify(reportData, null, 2)}\n\nGere a narrativa executiva.`,
+    });
+  }
+
   async summarizeMeeting(
     ataText: string,
     userId: string,
