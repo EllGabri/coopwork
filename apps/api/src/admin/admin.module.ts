@@ -5,6 +5,7 @@ import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { BlacklistService } from '../auth/blacklist.service';
 import { PermissionsService } from '../auth/permissions.service';
+import { SystemParamsService } from './system-params.service';
 
 @Module({
   imports: [
@@ -17,7 +18,13 @@ import { PermissionsService } from '../auth/permissions.service';
     }),
   ],
   controllers: [AdminController],
-  providers: [AdminService, AdminAuthGuard, BlacklistService, PermissionsService],
-  exports: [AdminService, AdminAuthGuard],
+  providers: [
+    AdminService,
+    AdminAuthGuard,
+    BlacklistService,
+    PermissionsService,
+    SystemParamsService,
+  ],
+  exports: [AdminService, AdminAuthGuard, SystemParamsService],
 })
 export class AdminModule {}

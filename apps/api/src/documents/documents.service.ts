@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import { SupabaseService } from '../supabase/supabase.service';
+import { SystemParamsService } from '../admin/system-params.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './documents.dto';
 
 const ALLOWED_MIME_TYPES = [
@@ -21,16 +22,18 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
 ];
 
-const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_SIZE_BYTES = 50 * 1024 * 1024; // fallback before DB read
 const BUCKET = 'ged-documents';
-const SIGNED_URL_TTL_SECONDS = 3600; // 1 hour
 
 const WRITE_ROLES = ['super_admin', 'director', 'manager'];
 const READ_ROLES = ['super_admin', 'director', 'manager', 'compliance'];
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly sysParams: SystemParamsService,
+  ) {}
 
   async findAll(
     tenantId: string,
@@ -162,8 +165,10 @@ export class DocumentsService {
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException('Tipo de arquivo não permitido');
     }
-    if (file.size > MAX_SIZE_BYTES) {
-      throw new BadRequestException('Arquivo deve ser menor que 50 MB');
+    const maxMb = await this.sysParams.getNumber('upload_max_mb', 50);
+    const maxBytes = maxMb * 1024 * 1024;
+    if (file.size > maxBytes) {
+      throw new BadRequestException(`Arquivo deve ser menor que ${maxMb} MB`);
     }
 
     const ext = file.originalname.split('.').pop() ?? 'bin';
@@ -230,13 +235,15 @@ export class DocumentsService {
     if (!doc.storage_path) throw new BadRequestException('Documento sem arquivo associado');
 
     await this.logAccess(id, userId, 'download', ipAddress);
+    const ttlHours = await this.sysParams.getNumber('signed_url_ttl_h', 1);
+    const signedUrlTtl = ttlHours * 3600;
 
     const isPdf = (doc.mime_type as string | null) === 'application/pdf';
 
     if (!isPdf) {
       const { data, error } = await this.supabase.admin.storage
         .from(BUCKET)
-        .createSignedUrl(doc.storage_path as string, SIGNED_URL_TTL_SECONDS);
+        .createSignedUrl(doc.storage_path as string, signedUrlTtl);
       if (error || !data?.signedUrl) throw new Error('Falha ao gerar URL de download');
       return { type: 'redirect', signedUrl: data.signedUrl };
     }

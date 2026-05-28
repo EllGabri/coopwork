@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import Redis from 'ioredis';
 import * as crypto from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
+import { SystemParamsService } from '../admin/system-params.service';
 
 const RATE_LIMIT_PER_HOUR = 20;
 const RATE_WINDOW_SECONDS = 3600;
@@ -15,7 +16,10 @@ export class AiService {
   private readonly anthropic: Anthropic;
   private readonly redis: Redis | null;
 
-  constructor(private readonly supabase: SupabaseService) {
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly sysParams: SystemParamsService,
+  ) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is required');
     this.anthropic = new Anthropic({ apiKey });
@@ -84,16 +88,17 @@ export class AiService {
   private async checkRateLimit(userId: string) {
     if (!this.redis) return;
 
+    const limit = await this.sysParams.getNumber('ai_rate_limit_hour', RATE_LIMIT_PER_HOUR);
     const key = `ai_rate:${userId}`;
     try {
       const count = await this.redis.incr(key);
       if (count === 1) {
         await this.redis.expire(key, RATE_WINDOW_SECONDS);
       }
-      if (count > RATE_LIMIT_PER_HOUR) {
+      if (count > limit) {
         const ttl = await this.redis.ttl(key);
         throw new HttpException(
-          { message: 'Limite de 20 chamadas/hora atingido', retryAfter: ttl },
+          { message: `Limite de ${limit} chamadas/hora atingido`, retryAfter: ttl },
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }

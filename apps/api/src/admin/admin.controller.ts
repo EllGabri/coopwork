@@ -19,6 +19,7 @@ import { AdminAuthGuard } from './admin-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { AdminService } from './admin.service';
+import { SystemParamsService } from './system-params.service';
 
 type AuthUser = JwtPayload & { userId: string };
 
@@ -27,7 +28,10 @@ const ADMIN_COOKIE_TTL_MS = 8 * 3600 * 1000;
 @Controller('admin')
 @UseGuards(JwtAuthGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly sysParams: SystemParamsService,
+  ) {}
 
   @Get('totp/status')
   getTotpStatus(@CurrentUser() user: AuthUser) {
@@ -149,6 +153,21 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   getActionsLog(@CurrentUser() user: AuthUser) {
     return this.adminService.getAdminActionsLog(user.tenantId);
+  }
+
+  // ---- System params ----
+
+  @Get('system-params')
+  @UseGuards(AdminAuthGuard)
+  getSystemParams() {
+    return this.sysParams.getAll();
+  }
+
+  @Patch('system-params/:key')
+  @UseGuards(AdminAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  setSystemParam(@Param('key') key: string, @Body('value') value: string) {
+    return this.sysParams.set(key, value);
   }
 
   // ---- Permissions matrix ----
