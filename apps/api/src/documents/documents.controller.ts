@@ -49,8 +49,16 @@ export class DocumentsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.documentsService.findOne(id, user.tenantId, user.role);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() req: Request,
+  ) {
+    const doc = await this.documentsService.findOne(id, user.tenantId, user.role);
+    const ip =
+      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] ?? req.ip ?? null;
+    await this.documentsService.logAccess(id, user.userId, 'view', ip);
+    return doc;
   }
 
   @Get(':id/download')
