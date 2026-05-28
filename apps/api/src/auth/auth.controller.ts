@@ -34,8 +34,18 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getMe(@CurrentUser() user: JwtPayload & { userId: string }) {
-    return { userId: user.userId, email: user.email, role: user.role, tenantId: user.tenantId };
+  async getMe(@CurrentUser() user: JwtPayload & { userId: string }) {
+    const profile = await this.authService.getProfile(user.userId);
+    return {
+      userId: user.userId,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      fullName: profile?.full_name ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
+      departmentId: profile?.department_id ?? null,
+      lastLoginAt: profile?.last_login_at ?? null,
+    };
   }
 
   @Post('logout')

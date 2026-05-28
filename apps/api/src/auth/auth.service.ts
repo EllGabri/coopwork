@@ -71,6 +71,24 @@ export class AuthService {
     };
   }
 
+  async getProfile(userId: string) {
+    const { data } = await this.supabase.admin
+      .from('users')
+      .select('id, email, full_name, avatar_url, role, tenant_id, department_id, last_login_at')
+      .eq('id', userId)
+      .single();
+    return data as {
+      id: string;
+      email: string;
+      full_name: string | null;
+      avatar_url: string | null;
+      role: string;
+      tenant_id: string;
+      department_id: string | null;
+      last_login_at: string | null;
+    } | null;
+  }
+
   signJwt(user: AuthUser): string {
     return this.jwtService.sign({
       sub: user.userId,
