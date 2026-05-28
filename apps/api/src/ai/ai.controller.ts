@@ -39,4 +39,9 @@ export class AiController {
   suggestGedImprovements(@CurrentUser() user: AuthUser) {
     return this.aiService.suggestGedImprovements(user.tenantId, user.userId);
   }
+
+  @Post('ged/summarize-meeting')
+  summarizeMeeting(@Body('text') text: string, @CurrentUser() user: AuthUser) {
+    return this.aiService.summarizeMeeting(text ?? '', user.userId, user.tenantId);
+  }
 }

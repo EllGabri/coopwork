@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { FlowchartEditor } from '../components/ged/FlowchartEditor';
 import { DocumentAclModal } from '../components/ged/DocumentAclModal';
 import { AiGedOpportunities } from '../components/ged/AiGedOpportunities';
+import { MeetingSummary } from '../components/ged/MeetingSummary';
 
 interface DocCategory {
   id: string;
@@ -206,6 +207,7 @@ export default function GedPage() {
             />
           </div>
           <AiGedOpportunities />
+          <MeetingSummary />
           <span className="ml-auto text-xs text-muted-foreground">
             {documents.length} documento{documents.length !== 1 ? 's' : ''}
           </span>

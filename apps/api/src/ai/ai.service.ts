@@ -146,6 +146,38 @@ export class AiService {
     }
   }
 
+  async summarizeMeeting(
+    ataText: string,
+    userId: string,
+    tenantId: string,
+  ): Promise<Array<{ deliberation: string; responsible?: string }>> {
+    const systemPrompt =
+      'Você é um secretário executivo de uma cooperativa de crédito brasileira. ' +
+      'Leia a ata de reunião e extraia até 10 deliberações concretas com responsável se identificado. ' +
+      'Responda APENAS com JSON no formato: ' +
+      '[{"deliberation":"...","responsible":"nome ou null"}]';
+
+    const raw = await this.generateCompletion({
+      userId,
+      tenantId,
+      feature: 'meeting_summary',
+      systemPrompt,
+      userMessage: `Ata da reunião:\n\n${ataText.slice(0, 4000)}\n\nExtraia as deliberações.`,
+    });
+
+    try {
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array');
+      const items = JSON.parse(jsonMatch[0]) as Array<{
+        deliberation: string;
+        responsible?: string;
+      }>;
+      return items.slice(0, 10);
+    } catch {
+      return [];
+    }
+  }
+
   async suggestGedImprovements(
     tenantId: string,
     userId: string,
