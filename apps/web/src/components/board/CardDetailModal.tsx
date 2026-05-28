@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CardDetail, CardComment, ChecklistItem, CardPriority } from '../../types/board';
 import { api } from '../../lib/api';
+import { ColorPicker } from '../ui/ColorPicker';
 
 interface Props {
   cardId: string;
@@ -174,6 +175,13 @@ export function CardDetailModal({ cardId, onClose, onUpdate }: Props) {
         <div className="p-5 space-y-5">
           {/* Meta row */}
           <div className="flex flex-wrap gap-3 text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground text-xs">Cor</span>
+              <ColorPicker
+                value={card.color ?? '#6366f1'}
+                onChange={(hex) => scheduleSave({ color: hex })}
+              />
+            </div>
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground text-xs">Prioridade</span>
               <select
