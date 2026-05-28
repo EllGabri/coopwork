@@ -1,5 +1,5 @@
-function App() {
-  return <h1>CoopWork</h1>;
-}
+import AppRouter from './router';
 
-export default App;
+export default function App() {
+  return <AppRouter />;
+}

@@ -20,3 +20,17 @@
 {"file":"apps/api/src/app.controller.ts","action":"Write","timestamp":"2026-05-27T23:09:29Z","important":false}
 {"file":"apps/api/src/app.service.ts","action":"Write","timestamp":"2026-05-27T23:09:31Z","important":false}
 {"file":"docker-compose.yml","action":"Write","timestamp":"2026-05-27T23:17:54Z","important":false}
+{"file":"apps/web/tailwind.config.js","action":"Write","timestamp":"2026-05-28T02:47:58Z","important":false}
+{"file":"apps/web/postcss.config.js","action":"Write","timestamp":"2026-05-28T02:48:02Z","important":false}
+{"file":"apps/web/src/index.css","action":"Write","timestamp":"2026-05-28T02:48:14Z","important":false}
+{"file":"apps/web/src/main.tsx","action":"Write","timestamp":"2026-05-28T02:48:19Z","important":false}
+{"file":"apps/web/src/lib/utils.ts","action":"Write","timestamp":"2026-05-28T02:48:29Z","important":false}
+{"file":"apps/web/src/components/ui/Button.tsx","action":"Write","timestamp":"2026-05-28T02:48:38Z","important":false}
+{"file":"apps/web/src/pages/LoginPage.tsx","action":"Write","timestamp":"2026-05-28T02:48:55Z","important":false}
+{"file":"apps/web/src/pages/DashboardPage.tsx","action":"Write","timestamp":"2026-05-28T02:49:00Z","important":false}
+{"file":"apps/web/src/router/index.tsx","action":"Write","timestamp":"2026-05-28T02:49:05Z","important":false}
+{"file":"apps/web/src/App.tsx","action":"Write","timestamp":"2026-05-28T02:49:08Z","important":false}
+{"file":"apps/web/src/hooks/useAuth.ts","action":"Write","timestamp":"2026-05-28T02:49:13Z","important":false}
+{"file":"apps/web/src/types/index.ts","action":"Write","timestamp":"2026-05-28T02:49:17Z","important":false}
+{"file":"apps/web/tsconfig.json","action":"Edit","timestamp":"2026-05-28T02:49:54Z","important":false}
+{"file":"apps/web/package.json","action":"Edit","timestamp":"2026-05-28T02:50:09Z","important":false}

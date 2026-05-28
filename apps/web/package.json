@@ -2,6 +2,7 @@
   "name": "@coopwork/web",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -10,14 +11,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coopwork/shared": "workspace:*",
+    "clsx": "^2.1.1",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@coopwork/shared": "workspace:*"
+    "react-router-dom": "^7.15.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
     "vite": "^5.4.0"
   }
 }
