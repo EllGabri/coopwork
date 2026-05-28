@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -38,9 +38,10 @@ export class AuthController {
     return { userId: user.userId, email: user.email, role: user.role, tenantId: user.tenantId };
   }
 
-  @Get('logout')
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
   logout(@Res() res: Response) {
-    res.clearCookie('access_token', { httpOnly: true });
+    res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
     res.json({ message: 'Logout realizado com sucesso' });
   }
 }
