@@ -34,3 +34,6 @@
 {"file":"apps/web/src/types/index.ts","action":"Write","timestamp":"2026-05-28T02:49:17Z","important":false}
 {"file":"apps/web/tsconfig.json","action":"Edit","timestamp":"2026-05-28T02:49:54Z","important":false}
 {"file":"apps/web/package.json","action":"Edit","timestamp":"2026-05-28T02:50:09Z","important":false}
+{"file":"apps/web/src/components/layout/Sidebar.tsx","action":"Write","timestamp":"2026-05-28T02:52:38Z","important":false}
+{"file":"apps/web/src/components/layout/Header.tsx","action":"Write","timestamp":"2026-05-28T02:52:57Z","important":false}
+{"file":"apps/web/src/components/layout/AppLayout.tsx","action":"Write","timestamp":"2026-05-28T02:53:03Z","important":false}
