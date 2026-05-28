@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { FlowchartEditor } from '../components/ged/FlowchartEditor';
+import { DocumentAclModal } from '../components/ged/DocumentAclModal';
 
 interface DocCategory {
   id: string;
@@ -67,6 +68,7 @@ export default function GedPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [flowchartDoc, setFlowchartDoc] = useState<Document | null>(null);
+  const [aclDoc, setAclDoc] = useState<Document | null>(null);
 
   // Load categories
   useEffect(() => {
@@ -308,23 +310,31 @@ export default function GedPage() {
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">
                       {new Date(doc.updated_at).toLocaleDateString('pt-BR')}
                     </td>
-                    <td className="px-4 py-3 flex gap-1">
-                      {doc.is_flowchart ? (
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        {doc.is_flowchart ? (
+                          <button
+                            onClick={() => setFlowchartDoc(doc)}
+                            className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            Editar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => void handleDownload(doc)}
+                            disabled={downloading === doc.id}
+                            className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
+                          >
+                            {downloading === doc.id ? '…' : 'Baixar'}
+                          </button>
+                        )}
                         <button
-                          onClick={() => setFlowchartDoc(doc)}
-                          className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                          onClick={() => setAclDoc(doc)}
+                          className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
                         >
-                          Editar
+                          Permissões
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => void handleDownload(doc)}
-                          disabled={downloading === doc.id}
-                          className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:opacity-40 transition-colors"
-                        >
-                          {downloading === doc.id ? '…' : 'Baixar'}
-                        </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -333,6 +343,15 @@ export default function GedPage() {
           )}
         </div>
       </div>
+
+      {/* ACL modal */}
+      {aclDoc && (
+        <DocumentAclModal
+          documentId={aclDoc.id}
+          documentTitle={aclDoc.title}
+          onClose={() => setAclDoc(null)}
+        />
+      )}
 
       {/* Flowchart editor modal */}
       {flowchartDoc && (

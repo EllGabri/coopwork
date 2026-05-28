@@ -60,7 +60,7 @@ export class DocumentsController {
     @CurrentUser() user: AuthUser,
     @Req() req: Request,
   ) {
-    const doc = await this.documentsService.findOne(id, user.tenantId, user.role);
+    const doc = await this.documentsService.findOne(id, user.tenantId, user.role, user.userId);
     const ip =
       (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] ?? req.ip ?? null;
     await this.documentsService.logAccess(id, user.userId, 'view', ip);
@@ -113,6 +113,38 @@ export class DocumentsController {
   @Get(':id/audit-log')
   getAuditLog(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.documentsService.getAuditLog(id, user.tenantId, user.role);
+  }
+
+  @Get(':id/acl')
+  getAcl(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.documentsService.getAcl(id, user.tenantId, user.role);
+  }
+
+  @Post(':id/acl')
+  grantAccess(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { userId: string; canView?: boolean; canDownload?: boolean; canEdit?: boolean },
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.documentsService.grantAccess(
+      id,
+      body.userId,
+      body.canView ?? true,
+      body.canDownload ?? false,
+      body.canEdit ?? false,
+      user.tenantId,
+      user.userId,
+      user.role,
+    );
+  }
+
+  @Delete(':id/acl/:targetUserId')
+  revokeAccess(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('targetUserId', ParseUUIDPipe) targetUserId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.documentsService.revokeAccess(id, targetUserId, user.tenantId, user.role);
   }
 
   @Get(':id/versions')

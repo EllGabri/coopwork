@@ -64,8 +64,20 @@ export class DocumentsService {
     return data ?? [];
   }
 
-  async findOne(id: string, tenantId: string, role: string) {
-    if (!READ_ROLES.includes(role)) throw new ForbiddenException('Acesso negado ao GED');
+  async findOne(id: string, tenantId: string, role: string, userId?: string) {
+    const hasRoleAccess = READ_ROLES.includes(role);
+
+    if (!hasRoleAccess) {
+      // Check ACL
+      if (!userId) throw new ForbiddenException('Acesso negado ao GED');
+      const { data: aclEntry } = await this.supabase.admin
+        .from('document_acl')
+        .select('can_view')
+        .eq('document_id', id)
+        .eq('user_id', userId)
+        .single();
+      if (!aclEntry?.can_view) throw new ForbiddenException('Sem acesso a este documento');
+    }
 
     const { data, error } = await this.supabase.admin
       .from('documents')
@@ -76,6 +88,66 @@ export class DocumentsService {
 
     if (error || !data) throw new NotFoundException('Documento não encontrado');
     return data;
+  }
+
+  async getAcl(id: string, tenantId: string, role: string) {
+    if (!WRITE_ROLES.includes(role))
+      throw new ForbiddenException('Sem permissão para gerenciar ACL');
+    await this.findOne(id, tenantId, role);
+    const { data, error } = await this.supabase.admin
+      .from('document_acl')
+      .select('id, user_id, can_view, can_download, can_edit, granted_by, created_at')
+      .eq('document_id', id);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  async grantAccess(
+    id: string,
+    targetUserId: string,
+    canView: boolean,
+    canDownload: boolean,
+    canEdit: boolean,
+    tenantId: string,
+    grantedBy: string,
+    role: string,
+  ) {
+    if (!WRITE_ROLES.includes(role))
+      throw new ForbiddenException('Sem permissão para conceder acesso');
+    await this.findOne(id, tenantId, role);
+
+    const { data, error } = await this.supabase.admin
+      .from('document_acl')
+      .upsert(
+        {
+          document_id: id,
+          user_id: targetUserId,
+          can_view: canView,
+          can_download: canDownload,
+          can_edit: canEdit,
+          granted_by: grantedBy,
+        },
+        { onConflict: 'document_id,user_id' },
+      )
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async revokeAccess(id: string, targetUserId: string, tenantId: string, role: string) {
+    if (!WRITE_ROLES.includes(role))
+      throw new ForbiddenException('Sem permissão para revogar acesso');
+    await this.findOne(id, tenantId, role);
+
+    const { error } = await this.supabase.admin
+      .from('document_acl')
+      .delete()
+      .eq('document_id', id)
+      .eq('user_id', targetUserId);
+
+    if (error) throw new Error(error.message);
   }
 
   async upload(
