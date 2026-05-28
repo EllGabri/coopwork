@@ -123,6 +123,14 @@ export class AdminController {
     return this.adminService.forceLogout(id);
   }
 
+  // ---- Dashboard ----
+
+  @Get('dashboard')
+  @UseGuards(AdminAuthGuard)
+  getDashboard(@CurrentUser() user: AuthUser) {
+    return this.adminService.getDashboard(user.tenantId);
+  }
+
   // ---- Card trash ----
 
   @Get('cards')

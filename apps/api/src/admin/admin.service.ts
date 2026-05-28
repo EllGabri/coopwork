@@ -152,6 +152,65 @@ export class AdminService {
     });
   }
 
+  async getDashboard(tenantId: string) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [activeUsers, { data: aiStats }, { data: boardStats }, { data: storageStats }] =
+      await Promise.all([
+        this.blacklist.getActiveUserCount(),
+        this.supabase.admin
+          .from('ai_suggestions')
+          .select('tokens_used')
+          .eq('tenant_id', tenantId)
+          .gte('created_at', monthStart),
+        this.supabase.admin
+          .from('boards')
+          .select('id, name, board_columns!inner(cards(id))')
+          .eq('tenant_id', tenantId)
+          .eq('is_archived', false),
+        this.supabase.admin
+          .from('documents')
+          .select('size_bytes')
+          .eq('tenant_id', tenantId)
+          .neq('status', 'archived'),
+      ]);
+
+    const aiTokensThisMonth = (aiStats ?? []).reduce(
+      (sum: number, r: { tokens_used: number | null }) => sum + (r.tokens_used ?? 0),
+      0,
+    );
+
+    const storageBytesUsed = (storageStats ?? []).reduce(
+      (sum: number, r: { size_bytes: number | null }) => sum + (r.size_bytes ?? 0),
+      0,
+    );
+
+    // Count cards per board for top 10
+    const boardCardCounts = (boardStats ?? []).map(
+      (b: { id: string; name: string; board_columns: { cards: { id: string }[] }[] }) => ({
+        id: b.id,
+        name: b.name,
+        cardCount: b.board_columns.reduce(
+          (sum: number, col: { cards: { id: string }[] }) => sum + (col.cards?.length ?? 0),
+          0,
+        ),
+      }),
+    );
+    boardCardCounts.sort(
+      (a: { cardCount: number }, b: { cardCount: number }) => b.cardCount - a.cardCount,
+    );
+    const topBoards = boardCardCounts.slice(0, 10);
+
+    return {
+      activeUsers,
+      aiTokensThisMonth,
+      storageMbUsed: Math.round((storageBytesUsed / (1024 * 1024)) * 10) / 10,
+      topBoards,
+      generatedAt: now.toISOString(),
+    };
+  }
+
   async getAdminActionsLog(tenantId: string) {
     void tenantId;
     const { data, error } = await this.supabase.admin

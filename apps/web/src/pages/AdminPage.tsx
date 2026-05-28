@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
 
 type AdminState = 'loading' | 'setup-required' | 'verify-required' | 'authenticated';
-type AdminSection = 'home' | 'users';
+type AdminSection = 'home' | 'users' | 'monitoring';
 
 interface AdminUser {
   id: string;
@@ -28,6 +28,15 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [userLoading, setUserLoading] = useState(false);
+  // Monitoring state
+  const [dashData, setDashData] = useState<{
+    activeUsers: number;
+    aiTokensThisMonth: number;
+    storageMbUsed: number;
+    topBoards: { id: string; name: string; cardCount: number }[];
+    generatedAt: string;
+  } | null>(null);
+  const [dashLoading, setDashLoading] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -64,6 +73,18 @@ export default function AdminPage() {
       setSubmitting(false);
     }
   };
+
+  const fetchDashboard = useCallback(async () => {
+    setDashLoading(true);
+    try {
+      const data = await api.get<typeof dashData>('/admin/dashboard');
+      setDashData(data);
+    } catch {
+      toast('Erro ao carregar dashboard', 'error');
+    } finally {
+      setDashLoading(false);
+    }
+  }, [toast]);
 
   const fetchUsers = useCallback(
     async (search = '') => {
@@ -253,7 +274,11 @@ export default function AdminPage() {
             </button>
           )}
           <h1 className="text-xl font-bold text-foreground">
-            {section === 'home' ? 'Painel Administrativo' : 'Usuários'}
+            {section === 'home'
+              ? 'Painel Administrativo'
+              : section === 'users'
+                ? 'Usuários'
+                : 'Monitoramento'}
           </h1>
         </div>
         <button
@@ -279,18 +304,24 @@ export default function AdminPage() {
               icon: '👥',
               key: 'users' as const,
             },
+            {
+              title: 'Monitoramento',
+              desc: 'Dashboard de uso e métricas',
+              icon: '📊',
+              key: 'monitoring' as const,
+            },
             { title: 'Permissões', desc: 'Matrix role × módulo', icon: '🔒', key: null },
             { title: 'Parâmetros', desc: 'Configurações do sistema', icon: '⚙️', key: null },
             { title: 'Tarefas', desc: 'Buscar e moderar cards', icon: '📋', key: null },
-            { title: 'Monitoramento', desc: 'Dashboard de uso e métricas', icon: '📊', key: null },
             { title: 'Auditoria IA', desc: 'Log de chamadas ao Claude', icon: '🤖', key: null },
           ].map((item) => (
             <div
               key={item.title}
               onClick={() => {
                 if (item.key) {
-                  setSection(item.key);
+                  setSection(item.key as AdminSection);
                   if (item.key === 'users') void fetchUsers();
+                  if (item.key === 'monitoring') void fetchDashboard();
                 }
               }}
               className={`rounded-lg border border-border bg-card p-4 transition-colors ${item.key ? 'hover:border-primary/40 cursor-pointer' : 'opacity-60'}`}
@@ -404,6 +435,118 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Monitoring section */}
+      {section === 'monitoring' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void fetchDashboard()}
+              disabled={dashLoading}
+              className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:bg-muted disabled:opacity-40"
+            >
+              {dashLoading ? 'Carregando…' : 'Atualizar'}
+            </button>
+            {dashData && (
+              <span className="text-xs text-muted-foreground">
+                Atualizado: {new Date(dashData.generatedAt).toLocaleTimeString('pt-BR')}
+              </span>
+            )}
+          </div>
+
+          {dashLoading && !dashData && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />
+              ))}
+            </div>
+          )}
+
+          {dashData && (
+            <>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {[
+                  {
+                    label: 'Usuários ativos agora',
+                    value: dashData.activeUsers,
+                    icon: '🟢',
+                    suffix: '',
+                  },
+                  {
+                    label: 'Tokens IA (mês)',
+                    value: dashData.aiTokensThisMonth.toLocaleString('pt-BR'),
+                    icon: '🤖',
+                    suffix: '',
+                  },
+                  {
+                    label: 'Storage GED',
+                    value: dashData.storageMbUsed,
+                    icon: '💾',
+                    suffix: ' MB',
+                  },
+                  {
+                    label: 'Boards ativos',
+                    value: dashData.topBoards.length,
+                    icon: '📋',
+                    suffix: '',
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-border bg-card p-4">
+                    <div className="text-xl mb-1">{item.icon}</div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {item.value}
+                      {item.suffix}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
+                <div className="border-b border-border px-4 py-2.5">
+                  <p className="text-sm font-semibold text-foreground">Top 10 boards mais ativos</p>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                        #
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                        Board
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+                        Cards
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {dashData.topBoards.map((b, i) => (
+                      <tr key={b.id} className="hover:bg-muted/20">
+                        <td className="px-4 py-2.5 text-muted-foreground tabular-nums">{i + 1}</td>
+                        <td className="px-4 py-2.5 text-foreground">{b.name}</td>
+                        <td className="px-4 py-2.5 text-right text-foreground tabular-nums font-medium">
+                          {b.cardCount}
+                        </td>
+                      </tr>
+                    ))}
+                    {dashData.topBoards.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="px-4 py-4 text-center text-sm text-muted-foreground"
+                        >
+                          Nenhum board.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}

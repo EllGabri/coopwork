@@ -14,8 +14,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     const req = context.switchToHttp().getRequest<{ user?: { userId?: string } }>();
     const userId = req.user?.userId;
-    if (userId && (await this.blacklist.isBlacklisted(userId))) {
-      throw new UnauthorizedException('Sessão invalidada');
+    if (userId) {
+      if (await this.blacklist.isBlacklisted(userId)) {
+        throw new UnauthorizedException('Sessão invalidada');
+      }
+      void this.blacklist.trackActiveUser(userId);
     }
     return true;
   }
