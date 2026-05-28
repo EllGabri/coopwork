@@ -38,6 +38,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^4.17.0",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.0.0",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",

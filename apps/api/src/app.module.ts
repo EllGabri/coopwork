@@ -11,6 +11,7 @@ import { ColumnsModule } from './columns/columns.module';
 import { CardsModule } from './cards/cards.module';
 import { CommentsModule } from './comments/comments.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     CardsModule,
     CommentsModule,
     NotificationsModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
