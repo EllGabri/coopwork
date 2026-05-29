@@ -48,3 +48,6 @@ packages/**/.env.local
 
 # Claude Code harness (internal state)
 .claude/
+
+# Generated artifacts (harness demos)
+acceptance-demo.html
