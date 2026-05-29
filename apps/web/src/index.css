@@ -22,10 +22,10 @@
     --destructive-foreground: 0 0% 100%;
     --ring: 208 79% 51%;
     --radius: 0.5rem;
-    --sidebar-bg: 215 28% 17%;
-    --sidebar-fg: 210 20% 85%;
+    --sidebar-bg: 210 20% 98%;
+    --sidebar-fg: 215 20% 30%;
     --sidebar-active: 208 79% 51%;
-    --sidebar-hover: 215 25% 22%;
+    --sidebar-hover: 214 15% 92%;
   }
 
   .dark {
