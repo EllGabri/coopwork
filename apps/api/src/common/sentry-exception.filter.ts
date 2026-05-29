@@ -14,6 +14,8 @@ export class SentryExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(SentryExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
+    if (host.getType<string>() !== 'http') return;
+
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request>();
@@ -25,7 +27,7 @@ export class SentryExceptionFilter implements ExceptionFilter {
     if (status >= 500 || status === 401 || status === 403) {
       Sentry.withScope((scope) => {
         scope.setTag('http.status_code', String(status));
-        scope.setExtra('url', req.url);
+        scope.setExtra('url', req.route?.path ?? req.url);
         scope.setExtra('method', req.method);
         Sentry.captureException(exception);
       });

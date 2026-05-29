@@ -82,13 +82,15 @@ async function main() {
   console.log('3. Creating test users (5 roles)...');
   const createdUsers: { id: string; email: string; role: string }[] = [];
 
+  const seedPassword = process.env.SEED_USER_PASSWORD;
+  if (!seedPassword) throw new Error('SEED_USER_PASSWORD env var is required');
+
+  const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  const existingAuthUsers = listData?.users ?? [];
+
   for (const u of TEST_USERS) {
     // Create or find auth user
-    const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    let authId = listData?.users?.find((au) => au.email === u.email)?.id;
-
-    const seedPassword = process.env.SEED_USER_PASSWORD;
-    if (!seedPassword) throw new Error('SEED_USER_PASSWORD env var is required');
+    let authId = existingAuthUsers.find((au) => au.email === u.email)?.id;
 
     if (!authId) {
       const { data: created, error } = await supabase.auth.admin.createUser({
