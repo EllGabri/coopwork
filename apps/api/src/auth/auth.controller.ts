@@ -36,7 +36,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
-    res.redirect(process.env.WEB_URL ?? 'http://localhost:5173');
+    res.redirect(`${process.env.WEB_URL ?? 'http://localhost:5173'}/dashboard`);
   }
 
   @Get('my-permissions')
