@@ -45,3 +45,6 @@ apps/**/.env.local
 apps/**/.env.*.local
 packages/**/.env
 packages/**/.env.local
+
+# Claude Code harness (internal state)
+.claude/
