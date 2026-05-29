@@ -13,7 +13,7 @@
     "db:logs": "docker-compose logs -f postgres",
     "infra:up": "docker-compose up -d",
     "infra:down": "docker-compose down",
-    "db:seed": "npx ts-node --project tsconfig.seed.json scripts/seed.ts"
+    "db:seed": "TS_NODE_PROJECT=tsconfig.seed.json apps/api/node_modules/.bin/ts-node scripts/seed.ts"
   },
   "devDependencies": {
     "husky": "^9.0.0",

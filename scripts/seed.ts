@@ -225,7 +225,7 @@ async function main() {
           const { data: col, error: colErr } = await supabase
             .from('board_columns')
             .upsert(
-              { name: colName, board_id: board.id, tenant_id: tenant.id, position: pos },
+              { name: colName, board_id: board.id, position: pos },
               { onConflict: 'name,board_id' },
             )
             .select()
