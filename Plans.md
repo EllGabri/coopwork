@@ -156,3 +156,16 @@ Stack: React + NestJS + PostgreSQL (Supabase) + Vercel + Railway
 | Phase 10 — Deploy/CI           | 2-3 sessões  | Required    |
 
 **Total estimado**: ~50-58 sessões de desenvolvimento com Claude Code
+
+---
+
+## Phase 11: Refinamento UI — Estilo Monday.com
+
+| Task | Conteúdo                                                                                                                                                                                    | DoD                                                                                                                        | Depends | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------- | ------- |
+| 11.1 | Atualizar paleta de cores em `index.css`: `--primary` → #1E88E5 (azul), `--accent` → #F5B400 (dourado), variantes dark mode                                                                 | Sidebar e header refletem azul #1E88E5 em elementos ativos, dourado aparece no logo/destaques                              | Phase 4 | cc:WIP  |
+| 11.2 | Corrigir rota Sidebar: `SortableBoardItem` linkava para `/projects/${ws}/${board}` (inexistente) → `/boards/${board.id}`; avatar no footer usa initials de `useAuth`                        | Clicar em board na sidebar navega corretamente para `/boards/b-1`; avatar exibe iniciais reais do usuário                  | 11.1    | cc:TODO |
+| 11.3 | Polimento visual Sidebar: logo "N" dourado no modo compacto, tooltips nos ícones, estados hover/active refinados, botão "+ Novo Board"                                                      | Sidebar compacta mostra logo N dourado + ícones com tooltip; expandida mostra texto; transição suave                       | 11.2    | cc:TODO |
+| 11.4 | Polimento Header: busca expandida para 320px + atalho Ctrl+K para focar, iniciais reais via `useAuth`, hint "⌘K" no placeholder                                                             | Ctrl+K foca o campo de busca; avatar exibe iniciais do nome do usuário logado                                              | 11.3    | cc:TODO |
+| 11.5 | Dashboard real: substituir stub por 4 cards KPI (Total/Em andamento/Atrasadas/Concluídas via API) + gráfico pizza por status + gráfico barras por prioridade + lista de workspaces recentes | Dashboard carrega dados reais da API em < 3s, gráficos Recharts renderizam sem erro, estado de loading com skeletons       | 11.2    | cc:TODO |
+| 11.6 | Polimento Kanban: cabeçalhos de coluna com cor por status, cards com badge de prioridade colorido, data em vermelho quando vencida, avatar do responsável                                   | Colunas "A fazer/Em andamento/Concluído" têm cores distintas; card urgente mostra badge vermelho; data vencida em vermelho | 11.4    | cc:TODO |

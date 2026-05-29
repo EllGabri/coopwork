@@ -1,22 +1,32 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { NotificationBell } from './NotificationBell';
 
 const routeLabels: Record<string, string> = {
   dashboard: 'Dashboard',
   projects: 'Projetos',
   documents: 'Documentos',
+  boards: 'Boards',
   reports: 'Relatórios',
   profile: 'Perfil',
   admin: 'Admin',
 };
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join('');
+}
+
 function Breadcrumbs() {
   const location = useLocation();
   const parts = location.pathname.split('/').filter(Boolean);
-
   if (parts.length === 0) return null;
 
   return (
@@ -25,7 +35,7 @@ function Breadcrumbs() {
         const label = routeLabels[part] ?? part;
         const isLast = i === parts.length - 1;
         return (
-          <span key={part} className="flex items-center gap-1.5">
+          <span key={`${part}-${i}`} className="flex items-center gap-1.5">
             {i > 0 && <span className="text-muted-foreground">/</span>}
             <span className={isLast ? 'font-medium text-foreground' : 'text-muted-foreground'}>
               {label}
@@ -39,7 +49,25 @@ function Breadcrumbs() {
 
 export default function Header() {
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const userInitials = user?.fullName ? getInitials(user.fullName) : 'U';
+
+  // Ctrl+K / Cmd+K focusa a busca
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4">
@@ -49,7 +77,7 @@ export default function Header() {
       </div>
 
       {/* Global Search */}
-      <div className="relative w-64">
+      <div className={cn('relative transition-all duration-200', searchFocused ? 'w-80' : 'w-64')}>
         <svg
           className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           fill="none"
@@ -64,13 +92,17 @@ export default function Header() {
           />
         </svg>
         <input
+          ref={searchRef}
           type="search"
-          placeholder="Buscar..."
+          placeholder={searchFocused ? 'Buscar cards, documentos...' : 'Buscar... ⌘K'}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           className={cn(
             'h-9 w-full rounded-md border bg-background pl-9 pr-3 text-sm',
             'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+            'transition-all duration-200',
           )}
         />
       </div>
@@ -78,7 +110,7 @@ export default function Header() {
       {/* Dark mode toggle */}
       <button
         onClick={toggleTheme}
-        className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        className="rounded-md p-2 text-muted-foreground hover:bg-accent/20 hover:text-foreground transition-colors"
         aria-label="Alternar tema"
       >
         {resolvedTheme === 'dark' ? (
@@ -106,9 +138,13 @@ export default function Header() {
       <NotificationBell />
 
       {/* User avatar */}
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-        U
-      </div>
+      <Link
+        to="/profile"
+        title={user?.fullName ?? 'Perfil'}
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-xs font-bold text-[hsl(var(--accent-foreground))] hover:ring-2 hover:ring-[hsl(var(--accent))]/50 transition-all"
+      >
+        {userInitials}
+      </Link>
     </header>
   );
 }
